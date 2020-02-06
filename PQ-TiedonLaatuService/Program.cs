@@ -40,7 +40,6 @@ namespace PQ_TiedonLaatuService
             // Redirect the output stream of the child process.
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.RedirectStandardOutput = true;
-            //p.StartInfo.FileName = '\u0022' + appConfig.Path2PQExe + @"\primusquery.exe wilma.careeria.fi 1222 pq2 porkkana Jani_Testaa" + '\u0022';
             p.StartInfo.FileName = "primuskysely.cmd";
             p.Start();
             // Do not wait for the child process to exit before
