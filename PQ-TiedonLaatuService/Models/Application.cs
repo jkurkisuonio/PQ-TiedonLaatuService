@@ -14,10 +14,17 @@ namespace PQ_TiedonLaatuService.Models
         [JsonProperty("Path2PQConfiguration")]
         public string Path2PQConfiguration { get; set; }
         [JsonProperty("Path2WorkDir")]
-        public string Path2WorkDir { get; set; }
-        
+        public string Path2WorkDir { get; set; }        
         [JsonProperty("Path2PQResultDir")]
         public string Path2PQResultDir { get; set; }
+        [JsonProperty("wilmaUrl")]
+        public string wilmaUrl { get; set; }
+        [JsonProperty("wilmaPasswd")]
+        public string wilmaPasswd { get; set; }
+        [JsonProperty("wilmaUsername")]
+        public string wilmaUsername { get; set; }
+        [JsonProperty("wilmaCompanySpesificKey")]
+        public string wilmaCompanySpesificKey { get; set; }
 
     }
 }

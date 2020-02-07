@@ -5,9 +5,11 @@ using System.IO;
 
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using PQ_TiedonLaatuService.Models;
+using PQ_TiedonLaatuService.Service;
 
 namespace PQ_TiedonLaatuService
 {
@@ -24,16 +26,9 @@ namespace PQ_TiedonLaatuService
             var builder = new ConfigurationBuilder()
                  .SetBasePath(Directory.GetCurrentDirectory())
                  .AddJsonFile("appsettings.json");
-
             var config = builder.Build();
-
             var appConfig = config.GetSection("application").Get<Application>();
-
             Console.WriteLine("Application Name : {appConfig.Path2PQExe}");
-
-
-
-       
 
             // Start the child process.
             Process p = new Process();
@@ -48,7 +43,63 @@ namespace PQ_TiedonLaatuService
             // Read the output stream first and then wait.
             string output = p.StandardOutput.ReadToEnd();
             p.WaitForExit();
-            var resultString = Regex.Replace(output, @"^\s+$[\r\n]*", string.Empty, RegexOptions.Multiline);            
+            string resultString = output.Replace(";\r\n", string.Empty);
+            resultString = resultString.Replace("\r\n", string.Empty);
+            resultString = resultString.Split("<<<< OUTPUT >>>>", StringSplitOptions.None)[1];
+
+            XDocument doc = XDocument.Parse(resultString);
+
+            List<Opiskelija> opiskelijat = new List<Opiskelija>();
+            foreach (var opisk in doc.Descendants("opiskelija"))
+            {
+                var opiskelija = new Opiskelija();
+                opiskelija.etunimi = opisk.Element("etunimi").Value;
+                opiskelija.sukunimi = opisk.Element("sukunimi").Value;
+                opiskelija.korttinumero = opisk.Element("korttinumero").Value;
+                XElement vastuukouluttaja = opisk.Element("vastuukouluttaja");
+                string email = vastuukouluttaja.Element("email").Value;
+                string korttinumero = vastuukouluttaja.Element("korttinumero").Value;
+                opiskelija.vastuukouluttaja = new Vastuukouluttaja { email = email, korttinumero = korttinumero };
+                opiskelijat.Add(opiskelija);
+            }
+            // Sitten tallennetaan hälytys tietokantaan. Hälytys tyyppi, korttinumero, pvm ja vastaanottaja
+
+            // Sitten lähetetään hälytys ottamalla yhteys Wilmaan/luomalla Wilma viesti.
+            WilmaJson wilma = new WilmaJson(appConfig.wilmaUrl, appConfig.wilmaPasswd, appConfig.wilmaUsername, appConfig.wilmaCompanySpesificKey);
+            string FormKey = String.Empty;
+            // Luodaan sessio.
+            try
+            {
+                string firstContact = wilma.Login(string.Empty);
+                // Kirjaudutaan
+                string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
+                WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
+                // FormKey = wilmaResponse.FormKey.Split(':')[2];
+                FormKey = wilmaResponse.FormKey;
+
+            }
+            catch (Exception ex)
+            {
+                string firstContact = wilma.Login(string.Empty);
+                // Kirjaudutaan
+                string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
+                // Poimitaan formkey
+                WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
+                // FormKey = wilmaResponse.FormKey.Split(':')[2];
+                FormKey = wilmaResponse.FormKey;
+
+            }
+            // Sitten lähetetään hälytys
+
+
+            var wilmaViesti = new WilmaMsg {  FormKey = FormKey, bodytext = "testibody", Subject = "testisubject", r_teacher = "27" };
+            try { 
+            var result2 = wilma.Post("message/compose/", wilmaViesti);
+            }
+            catch (Exception ex)
+            { 
+            var result2 = wilma.Post("message/compose/", wilmaViesti);
+            }
         }
 
 

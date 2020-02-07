@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PQ-TiedonLaatuService", "PQ-TiedonLaatuService\PQ-TiedonLaatuService.csproj", "{AE7E71C2-09F5-42AF-B774-8EE19DE0A62A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PQ-TiedonLaatuService", "PQ-TiedonLaatuService\PQ-TiedonLaatuService.csproj", "{AE7E71C2-09F5-42AF-B774-8EE19DE0A62A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedLibraries", "RestSession\SharedLibraries\SharedLibraries.csproj", "{732F5009-C982-46CF-978A-26D1124DD566}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{AE7E71C2-09F5-42AF-B774-8EE19DE0A62A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AE7E71C2-09F5-42AF-B774-8EE19DE0A62A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AE7E71C2-09F5-42AF-B774-8EE19DE0A62A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{732F5009-C982-46CF-978A-26D1124DD566}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{732F5009-C982-46CF-978A-26D1124DD566}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{732F5009-C982-46CF-978A-26D1124DD566}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{732F5009-C982-46CF-978A-26D1124DD566}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
