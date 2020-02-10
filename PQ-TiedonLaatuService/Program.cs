@@ -91,14 +91,16 @@ namespace PQ_TiedonLaatuService
             }
             // Sitten lähetetään hälytys
 
-
-            var wilmaViesti = new WilmaMsg {  FormKey = FormKey, bodytext = "testibody", Subject = "testisubject", r_teacher = "27" };
+            // TODO: An userinteface for wilmaMessages and subjects.
+            // TODO: Now hardcoded r_teacher - should use the appropriate one.
+            var wilmaViesti = new WilmaMsg {  FormKey = FormKey, bodytext = "testibody", Subject = "testisubject", r_teacher = "339" };
             try { 
-            var result2 = wilma.Post("message/compose/", wilmaViesti);
+            var result2 = wilma.Post("messages/compose", wilmaViesti);     
             }
             catch (Exception ex)
             { 
-            var result2 = wilma.Post("message/compose/", wilmaViesti);
+            // TODO: Handle error messages and report 
+                //var result2 = wilma.Post("messages/compose/", wilmaViesti);
             }
         }
 
