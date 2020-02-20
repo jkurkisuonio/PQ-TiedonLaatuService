@@ -7,8 +7,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using PQ_TiedonLaatuService.Data;
 using PQ_TiedonLaatuService.Models;
+using PQ_TiedonLaatuService.Models.Database;
 using PQ_TiedonLaatuService.Service;
 
 namespace PQ_TiedonLaatuService
@@ -16,12 +20,30 @@ namespace PQ_TiedonLaatuService
     class Program
     {
 
+        
+
+
+
+
         /// <summary>
         /// https://stackoverflow.com/questions/206323/how-to-execute-command-line-in-c-get-std-out-results
         /// </summary>
         /// <param name="args"></param>
         static void Main(string[] args)
         {
+
+            using (PrimusAlertContext context = new PrimusAlertContext())
+            {
+
+                var std = new PrimusAlert()
+                {
+                    CardNumber = "9999", ReceiverCardNumber = "9998", SentDate = DateTime.Now };
+
+                context.PrimusAlerts.Add(std);
+                context.SaveChanges();
+            }
+
+
             // Configuration
             var builder = new ConfigurationBuilder()
                  .SetBasePath(Directory.GetCurrentDirectory())
@@ -62,7 +84,7 @@ namespace PQ_TiedonLaatuService
                 opiskelija.vastuukouluttaja = new Vastuukouluttaja { email = email, korttinumero = korttinumero };
                 opiskelijat.Add(opiskelija);
             }
-            // Sitten tallennetaan hälytys tietokantaan. Hälytys tyyppi, korttinumero, pvm ja vastaanottaja
+            // TODO: Sitten tallennetaan hälytys tietokantaan. Hälytys tyyppi, korttinumero, pvm ja vastaanottaja
 
             // Sitten lähetetään hälytys ottamalla yhteys Wilmaan/luomalla Wilma viesti.
             WilmaJson wilma = new WilmaJson(appConfig.wilmaUrl, appConfig.wilmaPasswd, appConfig.wilmaUsername, appConfig.wilmaCompanySpesificKey);
@@ -76,6 +98,7 @@ namespace PQ_TiedonLaatuService
                 WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
                 // FormKey = wilmaResponse.FormKey.Split(':')[2];
                 FormKey = wilmaResponse.FormKey;
+              
 
             }
             catch (Exception ex)
@@ -93,16 +116,46 @@ namespace PQ_TiedonLaatuService
 
             // TODO: An userinteface for wilmaMessages and subjects.
             // TODO: Now hardcoded r_teacher - should use the appropriate one.
-            var wilmaViesti = new WilmaMsg {  FormKey = FormKey, bodytext = "testibody", Subject = "testisubject", r_teacher = "339" };
-            try { 
-            var result2 = wilma.Post("messages/compose", wilmaViesti);     
-            }
-            catch (Exception ex)
-            { 
-            // TODO: Handle error messages and report 
-                //var result2 = wilma.Post("messages/compose/", wilmaViesti);
+            foreach (Opiskelija op in opiskelijat)
+            {
+                var teacher = op.vastuukouluttaja.korttinumero;
+                var wilmaViesti = new WilmaMsg {  FormKey = FormKey, bodytext = "testibody", Subject = "testisubject", r_teacher = "339" };
+
+                try { 
+                    var result2 = wilma.Post("messages/compose", wilmaViesti);     
+                    }
+                catch (Exception ex)
+                { 
+                    // TODO: Handle error messages and report 
+                    //var result2 = wilma.Post("messages/compose/", wilmaViesti);
+
+                }
             }
         }
+
+
+        private static void CreateDbIfNotExists(IHost host)
+        {
+            using (var scope = host.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+
+                try
+                {
+                    var context = services.GetRequiredService<PrimusAlertContext>();
+                    context.Database.EnsureCreated();
+                }
+                catch (Exception ex)
+                {
+                    var logger = services.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ex, "An error occurred creating the DB.");
+                }
+            }
+        }
+
+
+
+
 
 
 
@@ -162,4 +215,6 @@ namespace PQ_TiedonLaatuService
             }
         }
     }
+
+
 }
