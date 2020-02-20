@@ -10,6 +10,12 @@ namespace PQ_TiedonLaatuService.Data
 {
     /// <summary>
     /// https://docs.microsoft.com/en-us/aspnet/core/data/ef-rp/intro?view=aspnetcore-3.1&tabs=visual-studio
+    /// https://www.entityframeworktutorial.net/efcore/entity-framework-core-console-application.aspx
+    /// https://www.entityframeworktutorial.net/efcore/entity-framework-core-console-application.aspx
+    /// https://docs.microsoft.com/en-us/aspnet/mvc/overview/getting-started/getting-started-with-ef-using-mvc/creating-an-entity-framework-data-model-for-an-asp-net-mvc-application
+    /// https://devblogs.microsoft.com/dotnet/announcing-entity-framework-core-3-1-and-entity-framework-6-4/
+    /// https://www.entityframeworktutorial.net/efcore/create-model-for-existing-database-in-ef-core.aspx
+    /// 
     /// </summary>
     public class PrimusAlertContext : DbContext
     {
