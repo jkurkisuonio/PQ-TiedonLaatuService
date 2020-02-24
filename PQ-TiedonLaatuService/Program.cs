@@ -137,7 +137,15 @@ namespace PQ_TiedonLaatuService
             foreach (Opiskelija op in opiskelijat)
             {
                 var teacher = op.vastuukouluttaja.korttinumero;
-                var wilmaViesti = new WilmaMsg { FormKey = FormKey, bodytext = alertType.AlertMsgText, Subject = alertType.AlertMsgSubject, r_teacher = "339" };
+                // TODO: Add personalizations to bodytext.
+
+                WordUtil wordUtil = new WordUtil(op.vastuukouluttaja, alertType, op);
+                ParserUtil parse = new ParserUtil(wordUtil.ReturnWords());
+                string parsedMsgText = parse.ReplaceWithKeyWords(alertType.AlertMsgText);
+
+                var wilmaViesti = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, Subject = alertType.AlertMsgSubject, r_teacher = "339" };
+
+     
 
                 try {
                     var result2 = wilma.Post("messages/compose", wilmaViesti);
