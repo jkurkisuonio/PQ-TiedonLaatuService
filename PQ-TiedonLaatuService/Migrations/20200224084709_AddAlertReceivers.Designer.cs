@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PQ_TiedonLaatuService.Data;
 
 namespace PQ_TiedonLaatuService.Migrations
 {
     [DbContext(typeof(PrimusAlertContext))]
-    partial class PrimusAlertContextModelSnapshot : ModelSnapshot
+    [Migration("20200224084709_AddAlertReceivers")]
+    partial class AddAlertReceivers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -77,10 +79,10 @@ namespace PQ_TiedonLaatuService.Migrations
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<int?>("AlertReceiverId")
+                    b.Property<int>("AlertReceiverId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("AlertTypeId")
+                    b.Property<int>("AlertTypeId")
                         .HasColumnType("int");
 
                     b.Property<string>("CardNumber")
@@ -105,11 +107,15 @@ namespace PQ_TiedonLaatuService.Migrations
                 {
                     b.HasOne("PQ_TiedonLaatuService.Models.Database.AlertReceiver", "AlertReceiver")
                         .WithMany("PrimusAlerts")
-                        .HasForeignKey("AlertReceiverId");
+                        .HasForeignKey("AlertReceiverId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("PQ_TiedonLaatuService.Models.Database.AlertType", "AlertType")
                         .WithMany("PrimusAlerts")
-                        .HasForeignKey("AlertTypeId");
+                        .HasForeignKey("AlertTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

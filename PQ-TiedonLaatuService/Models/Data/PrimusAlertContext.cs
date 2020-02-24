@@ -21,6 +21,8 @@ namespace PQ_TiedonLaatuService.Data
     {
         public virtual DbSet<AlertType> AlertTypes { get; set; }
         public virtual DbSet<PrimusAlert> PrimusAlerts { get; set; }
+        public virtual DbSet<AlertReceiver> AlertReceivers { get; set; }
+
         //public PrimusAlertContext(DbContextOptions<PrimusAlertContext> options) : base(options)
         //{
 
@@ -30,6 +32,7 @@ namespace PQ_TiedonLaatuService.Data
         {
             modelBuilder.Entity<AlertType>().ToTable("AlertType");
             modelBuilder.Entity<PrimusAlert>().ToTable("PrimusAlert");
+            modelBuilder.Entity<AlertReceiver>().ToTable("AlertReceiver");
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

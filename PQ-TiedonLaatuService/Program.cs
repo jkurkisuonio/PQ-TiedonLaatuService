@@ -14,17 +14,12 @@ using PQ_TiedonLaatuService.Data;
 using PQ_TiedonLaatuService.Models;
 using PQ_TiedonLaatuService.Models.Database;
 using PQ_TiedonLaatuService.Service;
+using System.Linq;
 
 namespace PQ_TiedonLaatuService
 {
     class Program
     {
-
-        
-
-
-
-
         /// <summary>
         /// https://stackoverflow.com/questions/206323/how-to-execute-command-line-in-c-get-std-out-results
         /// </summary>
@@ -32,15 +27,12 @@ namespace PQ_TiedonLaatuService
         static void Main(string[] args)
         {
 
+            // Get the alert type - first one 
+            // TODO: Iterate trough all alert types     
+            AlertType alertType = new AlertType();
             using (PrimusAlertContext context = new PrimusAlertContext())
             {
-
-                var std = new PrimusAlert()
-                {
-                    CardNumber = "9999", ReceiverCardNumber = "9998", SentDate = DateTime.Now };
-
-                context.PrimusAlerts.Add(std);
-                context.SaveChanges();
+                alertType = (from a in context.AlertTypes select a).FirstOrDefault();
             }
 
 
@@ -83,8 +75,34 @@ namespace PQ_TiedonLaatuService
                 string korttinumero = vastuukouluttaja.Element("korttinumero").Value;
                 opiskelija.vastuukouluttaja = new Vastuukouluttaja { email = email, korttinumero = korttinumero };
                 opiskelijat.Add(opiskelija);
+
+                // Check whenether there is already a receiver.
+
+                AlertReceiver receiver = GetReceiver(opiskelija.vastuukouluttaja);
+
+                using (PrimusAlertContext context = new PrimusAlertContext()) {
+                    var pa = new PrimusAlert()
+                    {
+                        CardNumber = opiskelija.korttinumero,
+                        ReceiverCardNumber = receiver.CardNumber,
+                        SentDate = DateTime.Now,
+                       // AlertReceiverId = receiver.AlertReceiverId,                       
+                       //AlertReceiver = receiver,
+                        //AlertType = alertType,
+                       // AlertTypeId = alertType.AlertTypeId
+
+                    };
+
+                    context.PrimusAlerts.Add(pa);
+                    context.SaveChanges();
+                }
+
+
             }
             // TODO: Sitten tallennetaan hälytys tietokantaan. Hälytys tyyppi, korttinumero, pvm ja vastaanottaja
+
+
+
 
             // Sitten lähetetään hälytys ottamalla yhteys Wilmaan/luomalla Wilma viesti.
             WilmaJson wilma = new WilmaJson(appConfig.wilmaUrl, appConfig.wilmaPasswd, appConfig.wilmaUsername, appConfig.wilmaCompanySpesificKey);
@@ -98,7 +116,7 @@ namespace PQ_TiedonLaatuService
                 WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
                 // FormKey = wilmaResponse.FormKey.Split(':')[2];
                 FormKey = wilmaResponse.FormKey;
-              
+
 
             }
             catch (Exception ex)
@@ -119,13 +137,13 @@ namespace PQ_TiedonLaatuService
             foreach (Opiskelija op in opiskelijat)
             {
                 var teacher = op.vastuukouluttaja.korttinumero;
-                var wilmaViesti = new WilmaMsg {  FormKey = FormKey, bodytext = "testibody", Subject = "testisubject", r_teacher = "339" };
+                var wilmaViesti = new WilmaMsg { FormKey = FormKey, bodytext = alertType.AlertMsgText, Subject = alertType.AlertMsgSubject, r_teacher = "339" };
 
-                try { 
-                    var result2 = wilma.Post("messages/compose", wilmaViesti);     
-                    }
+                try {
+                    var result2 = wilma.Post("messages/compose", wilmaViesti);
+                }
                 catch (Exception ex)
-                { 
+                {
                     // TODO: Handle error messages and report 
                     //var result2 = wilma.Post("messages/compose/", wilmaViesti);
 
@@ -133,88 +151,120 @@ namespace PQ_TiedonLaatuService
             }
         }
 
-
-        private static void CreateDbIfNotExists(IHost host)
+        private static AlertReceiver GetReceiver(Vastuukouluttaja vastuukouluttaja)
         {
-            using (var scope = host.Services.CreateScope())
+            using (PrimusAlertContext context = new PrimusAlertContext())
             {
-                var services = scope.ServiceProvider;
+                AlertReceiver q = (from a in context.AlertReceivers where a.CardNumber == vastuukouluttaja.korttinumero && a.Email == vastuukouluttaja.email select a).FirstOrDefault();
+                if (q != null) return q;
+                else
+                {
+                    // Create new one or update existing one.
+                    // Update?
+                    AlertReceiver q2 = (from a in context.AlertReceivers where a.CardNumber == vastuukouluttaja.korttinumero select a).FirstOrDefault();
+                    if (q2 != null)
+                    {
+                        // Update email address and return existing datarow.
+                        q2.Email = vastuukouluttaja.email;
+                        context.SaveChanges();
+                        return q2;
+                    }
+                    else
+                    {
+                        // Create new one.
+                        var a = new AlertReceiver { CardNumber = vastuukouluttaja.korttinumero, Email = vastuukouluttaja.email };
+                        context.AlertReceivers.Add(a);
+                        context.SaveChanges();
+                        return a;
+                    }
 
-                try
-                {
-                    var context = services.GetRequiredService<PrimusAlertContext>();
-                    context.Database.EnsureCreated();
                 }
-                catch (Exception ex)
+            }
+
+
+
+            static void CreateDbIfNotExists(IHost host)
+            {
+                using (var scope = host.Services.CreateScope())
                 {
-                    var logger = services.GetRequiredService<ILogger<Program>>();
-                    logger.LogError(ex, "An error occurred creating the DB.");
+                    var services = scope.ServiceProvider;
+
+                    try
+                    {
+                        var context = services.GetRequiredService<PrimusAlertContext>();
+                        context.Database.EnsureCreated();
+                    }
+                    catch (Exception ex)
+                    {
+                        var logger = services.GetRequiredService<ILogger<Program>>();
+                        logger.LogError(ex, "An error occurred creating the DB.");
+                    }
+                }
+            }
+
+
+
+
+
+
+
+            static void Main2(string[] args)
+            {
+                // Configuration
+                var builder = new ConfigurationBuilder()
+                     .SetBasePath(Directory.GetCurrentDirectory())
+                     .AddJsonFile("appsettings.json");
+
+                var config = builder.Build();
+
+                var appConfig = config.GetSection("application").Get<Application>();
+
+                Console.WriteLine("Application Name : {appConfig.Path2PQExe}");
+
+
+
+                Process cmd = new Process();
+                cmd.StartInfo.FileName = "cmd.exe";
+                cmd.StartInfo.RedirectStandardInput = true;
+                cmd.StartInfo.RedirectStandardOutput = true;
+                cmd.StartInfo.CreateNoWindow = true;
+                cmd.StartInfo.UseShellExecute = false;
+                cmd.Start();
+                string komentorivi = '\u0022' + appConfig.Path2PQExe + @"\primusquery.exe" + '\u0022' + " " + '\u0022' + appConfig.Path2PQConfiguration + '\u0022';
+
+                Console.WriteLine("Komentorivi: " + komentorivi);
+                cmd.StandardInput.WriteLine(komentorivi);
+                cmd.StandardInput.Flush();
+                cmd.StandardInput.Close();
+                cmd.WaitForExit();
+
+                // Operoi tiedostosta tyhjät rivit pois.                    
+                string myPath = appConfig.Path2WorkDir + "halytys1.csv".ToString();
+                //if (File.Exists(appConfig.Path2WorkDir + "opsot2019.csv"))          
+                if (File.Exists((myPath)))
+                {
+                    Console.WriteLine(appConfig.Path2WorkDir);
+                    string text = System.IO.File.ReadAllText((@appConfig.@Path2WorkDir) + "halytys1.csv", Encoding.UTF8);
+                    var resultString = Regex.Replace(text, @"^\s+$[\r\n]*", string.Empty, RegexOptions.Multiline);
+                    System.IO.File.WriteAllText(appConfig.Path2PQResultDir + "halytys1.csv", resultString, Encoding.UTF8);
+                    // POISTETAAN TYÖTIEDOSTO.
+                    var fullPath = appConfig.Path2WorkDir + "halytys1.csv";
+                    File.Delete(appConfig.Path2WorkDir + "halytys1.csv");
+                    // OTETAAN BACKUP VARSINAISESTA.
+                    File.Copy(appConfig.Path2PQResultDir + "halytys.csv", appConfig.Path2PQResultDir + "halytys.bak", true);
+                    var fullPath2 = appConfig.Path2PQResultDir + "halytys1.csv";
+                    var fullPathBak = appConfig.Path2PQResultDir + "halytys.bak";
+                }
+                else
+                {
+                    // Virhe! Ei saatu tiedostoa, lähetä sähköpostia ja kirjoita lokiin.
+                    var resultString = "VIRHE! Yhteys Primukseen ei toimi, tai muu virhe. Ei voitu muodostaa opsot.csv tiedostoa.  TODETTU: " + DateTime.Now + Environment.NewLine + " VARMUUSKOPIO EDELLISESTÄ TOIMIVASTA Opsot.csv tiedostosta löytyy tästä hakemistosta nimellä opsot.bak";
+                    var fullPath = appConfig.Path2PQResultDir + "halytys1.csv";
+                    System.IO.File.WriteAllText(appConfig.Path2PQResultDir + "opsot.csv", resultString, Encoding.UTF8);
                 }
             }
         }
 
 
-
-
-
-
-
-        static void Main2(string[] args)
-        {
-            // Configuration
-            var builder = new ConfigurationBuilder()
-                 .SetBasePath(Directory.GetCurrentDirectory())
-                 .AddJsonFile("appsettings.json");
-
-            var config = builder.Build();
-
-            var appConfig = config.GetSection("application").Get<Application>();
-
-            Console.WriteLine("Application Name : {appConfig.Path2PQExe}");
-
-
-
-            Process cmd = new Process();
-            cmd.StartInfo.FileName = "cmd.exe";
-            cmd.StartInfo.RedirectStandardInput = true;
-            cmd.StartInfo.RedirectStandardOutput = true;
-            cmd.StartInfo.CreateNoWindow = true;
-            cmd.StartInfo.UseShellExecute = false;
-            cmd.Start();
-            string komentorivi = '\u0022' +    appConfig.Path2PQExe + @"\primusquery.exe" + '\u0022' + " " + '\u0022' + appConfig.Path2PQConfiguration + '\u0022';
-
-            Console.WriteLine("Komentorivi: " + komentorivi);
-            cmd.StandardInput.WriteLine(komentorivi);
-            cmd.StandardInput.Flush();
-            cmd.StandardInput.Close();
-            cmd.WaitForExit();
-
-            // Operoi tiedostosta tyhjät rivit pois.                    
-            string myPath = appConfig.Path2WorkDir + "halytys1.csv".ToString();
-            //if (File.Exists(appConfig.Path2WorkDir + "opsot2019.csv"))          
-            if (File.Exists((myPath)))
-            {
-                Console.WriteLine(appConfig.Path2WorkDir);
-                string text = System.IO.File.ReadAllText((@appConfig.@Path2WorkDir) + "halytys1.csv", Encoding.UTF8);
-                var resultString = Regex.Replace(text, @"^\s+$[\r\n]*", string.Empty, RegexOptions.Multiline);
-                System.IO.File.WriteAllText(appConfig.Path2PQResultDir + "halytys1.csv", resultString, Encoding.UTF8);
-                // POISTETAAN TYÖTIEDOSTO.
-                var fullPath = appConfig.Path2WorkDir + "halytys1.csv";
-                File.Delete(appConfig.Path2WorkDir + "halytys1.csv");
-                // OTETAAN BACKUP VARSINAISESTA.
-                File.Copy(appConfig.Path2PQResultDir + "halytys.csv", appConfig.Path2PQResultDir + "halytys.bak", true);
-                var fullPath2 = appConfig.Path2PQResultDir + "halytys1.csv";
-                var fullPathBak = appConfig.Path2PQResultDir + "halytys.bak";
-            }
-            else
-            {
-                // Virhe! Ei saatu tiedostoa, lähetä sähköpostia ja kirjoita lokiin.
-                var resultString = "VIRHE! Yhteys Primukseen ei toimi, tai muu virhe. Ei voitu muodostaa opsot.csv tiedostoa.  TODETTU: " + DateTime.Now + Environment.NewLine + " VARMUUSKOPIO EDELLISESTÄ TOIMIVASTA Opsot.csv tiedostosta löytyy tästä hakemistosta nimellä opsot.bak";
-                var fullPath = appConfig.Path2PQResultDir + "halytys1.csv";
-                System.IO.File.WriteAllText(appConfig.Path2PQResultDir + "opsot.csv", resultString, Encoding.UTF8);
-            }
-        }
-    }
-
-
+    } 
 }
