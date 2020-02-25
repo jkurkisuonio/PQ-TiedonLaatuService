@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PQ_TiedonLaatuService.Data;
 
 namespace PQ_TiedonLaatuService.Migrations
 {
     [DbContext(typeof(PrimusAlertContext))]
-    partial class PrimusAlertContextModelSnapshot : ModelSnapshot
+    [Migration("20200224134156_DbaseAddQueryNameColumn")]
+    partial class DbaseAddQueryNameColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,7 +23,7 @@ namespace PQ_TiedonLaatuService.Migrations
 
             modelBuilder.Entity("PQ_TiedonLaatuService.Models.Database.AlertReceiver", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("AlertReceiverId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
@@ -32,14 +34,14 @@ namespace PQ_TiedonLaatuService.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                    b.HasKey("AlertReceiverId");
 
                     b.ToTable("AlertReceiver");
                 });
 
             modelBuilder.Entity("PQ_TiedonLaatuService.Models.Database.AlertType", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("AlertTypeId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
@@ -68,22 +70,22 @@ namespace PQ_TiedonLaatuService.Migrations
                     b.Property<string>("QueryString")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                    b.HasKey("AlertTypeId");
 
                     b.ToTable("AlertType");
                 });
 
             modelBuilder.Entity("PQ_TiedonLaatuService.Models.Database.PrimusAlert", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("PrimusAlertId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<int>("AlertReceiverId")
+                    b.Property<int?>("AlertReceiverId")
                         .HasColumnType("int");
 
-                    b.Property<int>("AlertTypeId")
+                    b.Property<int?>("AlertTypeId")
                         .HasColumnType("int");
 
                     b.Property<string>("CardNumber")
@@ -95,7 +97,7 @@ namespace PQ_TiedonLaatuService.Migrations
                     b.Property<DateTime>("SentDate")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("Id");
+                    b.HasKey("PrimusAlertId");
 
                     b.HasIndex("AlertReceiverId");
 
@@ -108,15 +110,11 @@ namespace PQ_TiedonLaatuService.Migrations
                 {
                     b.HasOne("PQ_TiedonLaatuService.Models.Database.AlertReceiver", "AlertReceiver")
                         .WithMany("PrimusAlerts")
-                        .HasForeignKey("AlertReceiverId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("AlertReceiverId");
 
                     b.HasOne("PQ_TiedonLaatuService.Models.Database.AlertType", "AlertType")
                         .WithMany("PrimusAlerts")
-                        .HasForeignKey("AlertTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("AlertTypeId");
                 });
 #pragma warning restore 612, 618
         }

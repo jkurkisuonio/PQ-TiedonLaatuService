@@ -50,6 +50,7 @@ namespace PQ_TiedonLaatuService
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.RedirectStandardOutput = true;
             p.StartInfo.FileName = "primuskysely.cmd";
+            p.StartInfo.Arguments = alertType.QueryName;
             p.Start();
             // Do not wait for the child process to exit before
             // reading to the end of its redirected stream.
@@ -83,13 +84,12 @@ namespace PQ_TiedonLaatuService
                 using (PrimusAlertContext context = new PrimusAlertContext()) {
                     var pa = new PrimusAlert()
                     {
-                        CardNumber = opiskelija.korttinumero,
-                        ReceiverCardNumber = receiver.CardNumber,
+                        CardNumber = opiskelija.korttinumero,                        
                         SentDate = DateTime.Now,
-                       // AlertReceiverId = receiver.AlertReceiverId,                       
-                       //AlertReceiver = receiver,
+                        AlertReceiverId = receiver.Id,                       
+                        //AlertReceiver = receiver,
                         //AlertType = alertType,
-                       // AlertTypeId = alertType.AlertTypeId
+                        AlertTypeId = alertType.Id
 
                     };
 
@@ -139,16 +139,18 @@ namespace PQ_TiedonLaatuService
                 var teacher = op.vastuukouluttaja.korttinumero;
                 // TODO: Add personalizations to bodytext.
 
-                WordUtil wordUtil = new WordUtil(op.vastuukouluttaja, alertType, op);
+                WordUtil wordUtil = new WordUtil(op.vastuukouluttaja, alertType, op, appConfig.wilmaUrl);
                 ParserUtil parse = new ParserUtil(wordUtil.ReturnWords());
                 string parsedMsgText = parse.ReplaceWithKeyWords(alertType.AlertMsgText);
 
-                var wilmaViesti = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, Subject = alertType.AlertMsgSubject, r_teacher = "339" };
+                // DEBUG: Tanja (106) + Jani (339) Tomi (463)
+                var wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "338" };
 
-     
+
 
                 try {
-                    var result2 = wilma.Post("messages/compose", wilmaViesti);
+                  //  var result2 = wilma.Post("messages/compose", wilmaViesti);
+                    var result3 = wilma.Post("messages/compose", wilmaViesti2);
                 }
                 catch (Exception ex)
                 {

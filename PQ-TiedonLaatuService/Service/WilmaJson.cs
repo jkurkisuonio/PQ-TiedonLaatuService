@@ -67,7 +67,16 @@ namespace PQ_TiedonLaatuService.Service
 
         public string Post(string service, WilmaMsg msg)
         {
-            string loginParameters =  "format=json&bodytext=" + msg.bodytext + "&Subject=" + msg.Subject + "&r_teacher=" + msg.r_teacher + "&Formkey=" + msg.FormKey; 
+            string recipients = String.Empty;
+            
+            if (!String.IsNullOrEmpty(msg.r_teacher)) {
+                recipients = "&r_teacher=" + msg.r_teacher;            
+            }
+            if (!String.IsNullOrEmpty(msg.r_personnel)) {
+                recipients += "&r_personnel=" + msg.r_personnel;
+            }
+            string loginParameters = "format=json&bodytext=" + msg.bodytext + "&Subject=" + msg.Subject + recipients + "&Formkey=" + msg.FormKey;
+            
             // Initiate the HttpWebRequest with session support with CookiedFactory
             if (String.IsNullOrEmpty(service)) request = CookiedRequestFactory.CreateHttpWebRequest(wilmaUrl + "messages/compose");            
             else request = CookiedRequestFactory.CreateHttpWebRequest(wilmaUrl + service + "?" + loginParameters);

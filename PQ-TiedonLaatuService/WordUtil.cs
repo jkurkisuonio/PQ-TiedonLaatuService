@@ -11,12 +11,14 @@ namespace PQ_TiedonLaatuService
         private readonly Vastuukouluttaja vastuukouluttaja;
         private readonly AlertType alertType;
         private readonly Opiskelija opiskelija;
+        private readonly string wilmaUrl;
            
-        public WordUtil(Vastuukouluttaja vastuukouluttaja, AlertType alertType, Opiskelija opiskelija)
+        public WordUtil(Vastuukouluttaja vastuukouluttaja, AlertType alertType, Opiskelija opiskelija, string wilmaUrl)
         {
             this.vastuukouluttaja = vastuukouluttaja;
             this.alertType = alertType;
             this.opiskelija = opiskelija;
+            this.wilmaUrl = wilmaUrl;
         }
 
         public Dictionary<String,string> ReturnWords()
@@ -25,7 +27,8 @@ namespace PQ_TiedonLaatuService
             words.Add("DateTimeNow", DateTime.Now.ToShortDateString());
             words.Add("ReceiverEmail", vastuukouluttaja.email);
             words.Add("AlertTypeName", alertType.Name);
-            words.Add("StudentName", opiskelija.etunimi + " " + opiskelija.sukunimi);
+            words.Add("StudentName", opiskelija.etunimi + " " + opiskelija.sukunimi);   
+            words.Add("WilmaStudentUrl", "§§[[" + wilmaUrl + "profiles/students/" + opiskelija.korttinumero + "]]§§[[" + wilmaUrl + "profiles/students/" + opiskelija.korttinumero +"]]");
             return words;
         }
     

@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PQ_TiedonLaatuService.Data;
 
 namespace PQ_TiedonLaatuService.Migrations
 {
     [DbContext(typeof(PrimusAlertContext))]
-    partial class PrimusAlertContextModelSnapshot : ModelSnapshot
+    [Migration("20200225063059_ChangeColumnNames")]
+    partial class ChangeColumnNames
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
