@@ -49,7 +49,14 @@ namespace PQ_TiedonLaatuService
             // Redirect the output stream of the child process.
             p.StartInfo.UseShellExecute = false;
             p.StartInfo.RedirectStandardOutput = true;
-            p.StartInfo.FileName = "primuskysely.cmd";
+            
+            // Read original command file with credentials and server address, file stored in root of your compiled app.
+            string fileContent = File.ReadAllText(appConfig.SourceCmdFilename);
+            // Append PrimusQuery name to it.
+            fileContent += " " + alertType.QueryName;
+            // Write file with command in it
+            File.WriteAllText(appConfig.DestinationCmdFileName, fileContent);
+            p.StartInfo.FileName = appConfig.DestinationCmdFileName;
             p.StartInfo.Arguments = alertType.QueryName;
             p.Start();
             // Do not wait for the child process to exit before
@@ -60,7 +67,19 @@ namespace PQ_TiedonLaatuService
             p.WaitForExit();
             string resultString = output.Replace(";\r\n", string.Empty);
             resultString = resultString.Replace("\r\n", string.Empty);
-            resultString = resultString.Split("<<<< OUTPUT >>>>", StringSplitOptions.None)[1];
+
+            // Result from primusquery must start with string <<<< OUTPUT >>>> !
+            string[] resultStrings = resultString.Split("<<<< OUTPUT >>>>", StringSplitOptions.None);
+            if (resultString.Count() > 1) resultString = resultStrings[1];
+            else
+            {
+                // Error, did not get appropriate response from Primus
+                // TODO: Log error to Windows Log and program-wide Logging solution - if available.
+                Console.WriteLine("Error. Did not get apropriate response from Primus.");
+                // Using Error Code 24 to indicate not enough lines.
+                // Microsoft conventions: https://docs.microsoft.com/fi-fi/windows/win32/debug/system-error-codes--0-499-?redirectedfrom=MSDN
+                Environment.Exit(24);
+            }
 
             XDocument doc = XDocument.Parse(resultString);
 
@@ -143,8 +162,8 @@ namespace PQ_TiedonLaatuService
                 ParserUtil parse = new ParserUtil(wordUtil.ReturnWords());
                 string parsedMsgText = parse.ReplaceWithKeyWords(alertType.AlertMsgText);
 
-                // DEBUG: Tanja (106) + Jani (339) Tomi (463)
-                var wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "338" };
+                // DEBUG: Tanja Personnel (106) Ope (338) + Jani (27)  Ope (339)
+                var wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
 
 
 

@@ -25,6 +25,11 @@ namespace PQ_TiedonLaatuService.Models
         public string wilmaUsername { get; set; }
         [JsonProperty("wilmaCompanySpesificKey")]
         public string wilmaCompanySpesificKey { get; set; }
-
+        [JsonProperty("CmdFilename")]
+        public string CmdFilename { get;  set; }
+        [JsonProperty("SourceCmdFilename")]
+        public string SourceCmdFilename { get; set; }
+        [JsonProperty("DestinationCmdFileName")]
+        public string DestinationCmdFileName { get; set; }
     }
 }
