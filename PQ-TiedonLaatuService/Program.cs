@@ -27,155 +27,169 @@ namespace PQ_TiedonLaatuService
         static void Main(string[] args)
         {
 
+
+
+
             // Get the alert type - first one 
             // TODO: Iterate trough all alert types     
-            AlertType alertType = new AlertType();
+            
+            var alertTypes = new List<AlertType>();
+
             using (PrimusAlertContext context = new PrimusAlertContext())
             {
-                alertType = (from a in context.AlertTypes select a).FirstOrDefault();
+                alertTypes = (from a in context.AlertTypes select a).ToList();
             }
 
-
-            // Configuration
-            var builder = new ConfigurationBuilder()
-                 .SetBasePath(Directory.GetCurrentDirectory())
-                 .AddJsonFile("appsettings.json");
-            var config = builder.Build();
-            var appConfig = config.GetSection("application").Get<Application>();
-            Console.WriteLine("Application Name : {appConfig.Path2PQExe}");
-
-            // Start the child process.
-            Process p = new Process();
-            // Redirect the output stream of the child process.
-            p.StartInfo.UseShellExecute = false;
-            p.StartInfo.RedirectStandardOutput = true;
-            
-            // Read original command file with credentials and server address, file stored in root of your compiled app.
-            string fileContent = File.ReadAllText(appConfig.SourceCmdFilename);
-            // Append PrimusQuery name to it.
-            fileContent += " " + alertType.QueryName;
-            // Write file with command in it
-            File.WriteAllText(appConfig.DestinationCmdFileName, fileContent);
-            p.StartInfo.FileName = appConfig.DestinationCmdFileName;
-            p.StartInfo.Arguments = alertType.QueryName;
-            p.Start();
-            // Do not wait for the child process to exit before
-            // reading to the end of its redirected stream.
-            // p.WaitForExit();
-            // Read the output stream first and then wait.
-            string output = p.StandardOutput.ReadToEnd();
-            p.WaitForExit();
-            string resultString = output.Replace(";\r\n", string.Empty);
-            resultString = resultString.Replace("\r\n", string.Empty);
-
-            // Result from primusquery must start with string <<<< OUTPUT >>>> !
-            string[] resultStrings = resultString.Split("<<<< OUTPUT >>>>", StringSplitOptions.None);
-            if (resultString.Count() > 1) resultString = resultStrings[1];
-            else
+            // Loop through alerttypes
+            foreach (var alertType in alertTypes)
             {
-                // Error, did not get appropriate response from Primus
-                // TODO: Log error to Windows Log and program-wide Logging solution - if available.
-                Console.WriteLine("Error. Did not get apropriate response from Primus.");
-                // Using Error Code 24 to indicate not enough lines.
-                // Microsoft conventions: https://docs.microsoft.com/fi-fi/windows/win32/debug/system-error-codes--0-499-?redirectedfrom=MSDN
-                Environment.Exit(24);
-            }
+                // If Alerttype is disabled or has empty columns for some reason - skip it.
+                if (!alertType.IsInUse || String.IsNullOrEmpty(alertType.Name) || String.IsNullOrEmpty(alertType.QueryName) || String.IsNullOrEmpty(alertType.QueryString) ||
+                    String.IsNullOrEmpty(alertType.AlertMsgText) || String.IsNullOrEmpty(alertType.AlertMsgSubject)) continue;
 
-            XDocument doc = XDocument.Parse(resultString);
+                // Configuration
+                var builder = new ConfigurationBuilder()
+                     .SetBasePath(Directory.GetCurrentDirectory())
+                     .AddJsonFile("appsettings.json");
+                var config = builder.Build();
+                var appConfig = config.GetSection("application").Get<Application>();
+                Console.WriteLine("Application Name : {appConfig.Path2PQExe}");
 
-            List<Opiskelija> opiskelijat = new List<Opiskelija>();
-            foreach (var opisk in doc.Descendants("opiskelija"))
-            {
-                var opiskelija = new Opiskelija();
-                opiskelija.etunimi = opisk.Element("etunimi").Value;
-                opiskelija.sukunimi = opisk.Element("sukunimi").Value;
-                opiskelija.korttinumero = opisk.Element("korttinumero").Value;
-                XElement vastuukouluttaja = opisk.Element("vastuukouluttaja");
-                string email = vastuukouluttaja.Element("email").Value;
-                string korttinumero = vastuukouluttaja.Element("korttinumero").Value;
-                opiskelija.vastuukouluttaja = new Vastuukouluttaja { email = email, korttinumero = korttinumero };
-                opiskelijat.Add(opiskelija);
+                // Start the child process.
+                Process p = new Process();
+                // Redirect the output stream of the child process.
+                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.RedirectStandardOutput = true;
 
-                // Check whenether there is already a receiver.
+                // Read original command file with credentials and server address, file stored in root of your compiled app.
+                string fileContent = File.ReadAllText(appConfig.SourceCmdFilename);
+                // Append PrimusQuery name to it.
+                fileContent += " " + alertType.QueryName;
+                // Write file with command in it
+                File.WriteAllText(appConfig.DestinationCmdFileName, fileContent);
+                p.StartInfo.FileName = appConfig.DestinationCmdFileName;
+                p.StartInfo.Arguments = alertType.QueryName;
+                p.Start();
+                // Do not wait for the child process to exit before
+                // reading to the end of its redirected stream.
+                // p.WaitForExit();
+                // Read the output stream first and then wait.
+                string output = p.StandardOutput.ReadToEnd();
+                p.WaitForExit();
+                string resultString = output.Replace(";\r\n", string.Empty);
+                resultString = resultString.Replace("\r\n", string.Empty);
 
-                AlertReceiver receiver = GetReceiver(opiskelija.vastuukouluttaja);
-
-                using (PrimusAlertContext context = new PrimusAlertContext()) {
-                    var pa = new PrimusAlert()
-                    {
-                        CardNumber = opiskelija.korttinumero,                        
-                        SentDate = DateTime.Now,
-                        AlertReceiverId = receiver.Id,                       
-                        //AlertReceiver = receiver,
-                        //AlertType = alertType,
-                        AlertTypeId = alertType.Id
-
-                    };
-
-                    context.PrimusAlerts.Add(pa);
-                    context.SaveChanges();
+                // Result from primusquery must start with string <<<< OUTPUT >>>> !
+                string[] resultStrings = resultString.Split("<<<< OUTPUT >>>>", StringSplitOptions.None);
+                if (resultString.Count() > 1) resultString = resultStrings[1];
+                else
+                {
+                    // Error, did not get appropriate response from Primus
+                    // TODO: Log error to Windows Log and program-wide Logging solution - if available.
+                    Console.WriteLine("Error. Did not get apropriate response from Primus.");
+                    // Using Error Code 24 to indicate not enough lines.
+                    // Microsoft conventions: https://docs.microsoft.com/fi-fi/windows/win32/debug/system-error-codes--0-499-?redirectedfrom=MSDN
+                    Environment.Exit(24);
                 }
 
+                XDocument doc = XDocument.Parse(resultString);
 
-            }
-            // TODO: Sitten tallennetaan hälytys tietokantaan. Hälytys tyyppi, korttinumero, pvm ja vastaanottaja
+                List<Opiskelija> opiskelijat = new List<Opiskelija>();
+                foreach (var opisk in doc.Descendants("opiskelija"))
+                {
+                    var opiskelija = new Opiskelija();
+                    opiskelija.etunimi = opisk.Element("etunimi").Value;
+                    opiskelija.sukunimi = opisk.Element("sukunimi").Value;
+                    opiskelija.korttinumero = opisk.Element("korttinumero").Value;
+                    XElement vastuukouluttaja = opisk.Element("vastuukouluttaja");
+                    string email = vastuukouluttaja.Element("email").Value;
+                    string korttinumero = vastuukouluttaja.Element("korttinumero").Value;
+                    opiskelija.vastuukouluttaja = new Vastuukouluttaja { email = email, korttinumero = korttinumero };
+                    opiskelijat.Add(opiskelija);
+
+                    // Check whenether there is already a receiver.
+
+                    AlertReceiver receiver = GetReceiver(opiskelija.vastuukouluttaja);
+
+                    using (PrimusAlertContext context = new PrimusAlertContext())
+                    {
+                        var pa = new PrimusAlert()
+                        {
+                            CardNumber = opiskelija.korttinumero,
+                            SentDate = DateTime.Now,
+                            AlertReceiverId = receiver.Id,
+                            //AlertReceiver = receiver,
+                            //AlertType = alertType,
+                            AlertTypeId = alertType.Id
+
+                        };
+
+                        context.PrimusAlerts.Add(pa);
+                        context.SaveChanges();
+                    }
 
 
-
-
-            // Sitten lähetetään hälytys ottamalla yhteys Wilmaan/luomalla Wilma viesti.
-            WilmaJson wilma = new WilmaJson(appConfig.wilmaUrl, appConfig.wilmaPasswd, appConfig.wilmaUsername, appConfig.wilmaCompanySpesificKey);
-            string FormKey = String.Empty;
-            // Luodaan sessio.
-            try
-            {
-                string firstContact = wilma.Login(string.Empty);
-                // Kirjaudutaan
-                string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
-                WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
-                // FormKey = wilmaResponse.FormKey.Split(':')[2];
-                FormKey = wilmaResponse.FormKey;
-
-
-            }
-            catch (Exception ex)
-            {
-                string firstContact = wilma.Login(string.Empty);
-                // Kirjaudutaan
-                string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
-                // Poimitaan formkey
-                WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
-                // FormKey = wilmaResponse.FormKey.Split(':')[2];
-                FormKey = wilmaResponse.FormKey;
-
-            }
-            // Sitten lähetetään hälytys
-
-            // TODO: An userinteface for wilmaMessages and subjects.
-            // TODO: Now hardcoded r_teacher - should use the appropriate one.
-            foreach (Opiskelija op in opiskelijat)
-            {
-                var teacher = op.vastuukouluttaja.korttinumero;
-                // TODO: Add personalizations to bodytext.
-
-                WordUtil wordUtil = new WordUtil(op.vastuukouluttaja, alertType, op, appConfig.wilmaUrl);
-                ParserUtil parse = new ParserUtil(wordUtil.ReturnWords());
-                string parsedMsgText = parse.ReplaceWithKeyWords(alertType.AlertMsgText);
-
-                // DEBUG: Tanja Personnel (106) Ope (338) + Jani (27)  Ope (339)
-                var wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
+                }
+                // TODO: Sitten tallennetaan hälytys tietokantaan. Hälytys tyyppi, korttinumero, pvm ja vastaanottaja
 
 
 
-                try {
-                  //  var result2 = wilma.Post("messages/compose", wilmaViesti);
-                    var result3 = wilma.Post("messages/compose", wilmaViesti2);
+
+                // Sitten lähetetään hälytys ottamalla yhteys Wilmaan/luomalla Wilma viesti.
+                WilmaJson wilma = new WilmaJson(appConfig.wilmaUrl, appConfig.wilmaPasswd, appConfig.wilmaUsername, appConfig.wilmaCompanySpesificKey);
+                string FormKey = String.Empty;
+                // Luodaan sessio.
+                try
+                {
+                    string firstContact = wilma.Login(string.Empty);
+                    // Kirjaudutaan
+                    string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
+                    WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
+                    // FormKey = wilmaResponse.FormKey.Split(':')[2];
+                    FormKey = wilmaResponse.FormKey;
+
+
                 }
                 catch (Exception ex)
                 {
-                    // TODO: Handle error messages and report 
-                    //var result2 = wilma.Post("messages/compose/", wilmaViesti);
+                    string firstContact = wilma.Login(string.Empty);
+                    // Kirjaudutaan
+                    string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
+                    // Poimitaan formkey
+                    WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
+                    // FormKey = wilmaResponse.FormKey.Split(':')[2];
+                    FormKey = wilmaResponse.FormKey;
 
+                }
+                // Sitten lähetetään hälytys
+
+                // TODO: An userinteface for wilmaMessages and subjects.
+                // TODO: Now hardcoded r_teacher - should use the appropriate one.
+                foreach (Opiskelija op in opiskelijat)
+                {
+                    var teacher = op.vastuukouluttaja.korttinumero;
+                    // TODO: Add personalizations to bodytext.
+
+                    WordUtil wordUtil = new WordUtil(op.vastuukouluttaja, alertType, op, appConfig.wilmaUrl);
+                    ParserUtil parse = new ParserUtil(wordUtil.ReturnWords());
+                    string parsedMsgText = parse.ReplaceWithKeyWords(alertType.AlertMsgText);
+
+                    // DEBUG: Tanja Personnel (106) Ope (338) + Jani (27)  Ope (339)
+                    var wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
+
+
+
+                    try
+                    {
+                        //  var result2 = wilma.Post("messages/compose", wilmaViesti);
+                        var result3 = wilma.Post("messages/compose", wilmaViesti2);
+                    }
+                    catch (Exception ex)
+                    {
+                        // TODO: Handle error messages and report 
+                        //var result2 = wilma.Post("messages/compose/", wilmaViesti);
+
+                    }
                 }
             }
         }
