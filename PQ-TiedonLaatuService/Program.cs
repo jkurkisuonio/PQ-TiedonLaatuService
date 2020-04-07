@@ -26,8 +26,8 @@ namespace PQ_TiedonLaatuService
         /// <param name="args"></param>
         static void Main(string[] args)
         {
-
-
+            // Collect messages to same teacher - so that only one daily resume message can be send to each teacher.
+            var teacherMessages = new Dictionary<string, List<WilmaMsg>>();
 
 
             // Get the alert type - first one 
@@ -40,19 +40,22 @@ namespace PQ_TiedonLaatuService
                 alertTypes = (from a in context.AlertTypes select a).ToList();
             }
 
+            // Configuration
+            var builder = new ConfigurationBuilder()
+                 .SetBasePath(Directory.GetCurrentDirectory())
+                 .AddJsonFile("appsettings.json");
+            var config = builder.Build();
+            Application appConfig = config.GetSection("application").Get<Application>();
+
+
             // Loop through alerttypes
             foreach (var alertType in alertTypes)
             {
                 // If Alerttype is disabled or has empty columns for some reason - skip it.
-                if (!alertType.IsInUse || String.IsNullOrEmpty(alertType.Name) || String.IsNullOrEmpty(alertType.QueryName) || String.IsNullOrEmpty(alertType.QueryString) ||
+                if (!alertType.IsInUse || String.IsNullOrEmpty(alertType.Name) || String.IsNullOrEmpty(alertType.QueryName)  ||
                     String.IsNullOrEmpty(alertType.AlertMsgText) || String.IsNullOrEmpty(alertType.AlertMsgSubject)) continue;
 
-                // Configuration
-                var builder = new ConfigurationBuilder()
-                     .SetBasePath(Directory.GetCurrentDirectory())
-                     .AddJsonFile("appsettings.json");
-                var config = builder.Build();
-                var appConfig = config.GetSection("application").Get<Application>();
+               
                 Console.WriteLine("Application Name : {appConfig.Path2PQExe}");
 
                 // Start the child process.
@@ -134,64 +137,160 @@ namespace PQ_TiedonLaatuService
 
 
 
-
-                // Sitten lähetetään hälytys ottamalla yhteys Wilmaan/luomalla Wilma viesti.
-                WilmaJson wilma = new WilmaJson(appConfig.wilmaUrl, appConfig.wilmaPasswd, appConfig.wilmaUsername, appConfig.wilmaCompanySpesificKey);
                 string FormKey = String.Empty;
-                // Luodaan sessio.
-                try
-                {
-                    string firstContact = wilma.Login(string.Empty);
-                    // Kirjaudutaan
-                    string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
-                    WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
-                    // FormKey = wilmaResponse.FormKey.Split(':')[2];
-                    FormKey = wilmaResponse.FormKey;
 
-
-                }
-                catch (Exception ex)
-                {
-                    string firstContact = wilma.Login(string.Empty);
-                    // Kirjaudutaan
-                    string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
-                    // Poimitaan formkey
-                    WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
-                    // FormKey = wilmaResponse.FormKey.Split(':')[2];
-                    FormKey = wilmaResponse.FormKey;
-
-                }
-                // Sitten lähetetään hälytys
-
-                // TODO: An userinteface for wilmaMessages and subjects.
-                // TODO: Now hardcoded r_teacher - should use the appropriate one.
                 foreach (Opiskelija op in opiskelijat)
                 {
-                    var teacher = op.vastuukouluttaja.korttinumero;
-                    // TODO: Add personalizations to bodytext.
+                    string teacher = op.vastuukouluttaja.korttinumero;
+
+                  
 
                     WordUtil wordUtil = new WordUtil(op.vastuukouluttaja, alertType, op, appConfig.wilmaUrl);
                     ParserUtil parse = new ParserUtil(wordUtil.ReturnWords());
                     string parsedMsgText = parse.ReplaceWithKeyWords(alertType.AlertMsgText);
 
                     // DEBUG: Tanja Personnel (106) Ope (338) + Jani (27)  Ope (339)
-                    var wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
+                    WilmaMsg wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
 
 
-
-                    try
+                    if (teacherMessages.ContainsKey(teacher))
                     {
-                        //  var result2 = wilma.Post("messages/compose", wilmaViesti);
-                        var result3 = wilma.Post("messages/compose", wilmaViesti2);
+                        // Allready
+                        teacherMessages[teacher].Add(wilmaViesti2);
+                    }
+                    else
+                    {
+                        // New teacher
+                        teacherMessages.Add(teacher, new List<WilmaMsg> { wilmaViesti2 });
+
+                    }
+
+
+                    // Sitten lähetetään hälytys ottamalla yhteys Wilmaan/luomalla Wilma viesti.
+                    // TODO: Collect email alerts into one Wilma message per receiver - otherwise too much messages.
+                    // Sitten lähetetään hälytys
+                    // TODO: An userinteface for wilmaMessages and subjects.
+                    // TODO: Now hardcoded r_teacher - should use the appropriate one.
+
+                    //WilmaJson wilma = new WilmaJson(appConfig.wilmaUrl, appConfig.wilmaPasswd, appConfig.wilmaUsername, appConfig.wilmaCompanySpesificKey);
+                
+                    //// Luodaan sessio.
+                    //try
+                    //{
+                    //    string firstContact = wilma.Login(string.Empty);
+                    //    // Kirjaudutaan
+                    //    string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
+                    //    WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
+                    //    // FormKey = wilmaResponse.FormKey.Split(':')[2];
+                    //    FormKey = wilmaResponse.FormKey;
+
+
+                    //}
+                    //catch (Exception ex)
+                    //{
+                    //    string firstContact = wilma.Login(string.Empty);
+                    //    // Kirjaudutaan
+                    //    string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
+                    //    // Poimitaan formkey
+                    //    WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
+                    //    // FormKey = wilmaResponse.FormKey.Split(':')[2];
+                    //    FormKey = wilmaResponse.FormKey;
+
+                    //}
+
+
+
+
+
+                    //try
+                    //{
+                    //    //  var result2 = wilma.Post("messages/compose", wilmaViesti);
+                    //    var result3 = wilma.Post("messages/compose", wilmaViesti2);
+                    //}
+                    //catch (Exception ex)
+                    //{
+                    //    // TODO: Handle error messages and report 
+                    //    //var result2 = wilma.Post("messages/compose/", wilmaViesti);
+
+                    //}
+                }
+            }
+
+            // Send messages through Wilma
+            SendMessages(teacherMessages, appConfig);
+
+
+        }
+
+        private static void SendMessages(Dictionary<string, List<WilmaMsg>> teacherMessages, Application appConfig)
+        {
+            string FormKey = String.Empty;
+            // First Connect to Wilma.
+            WilmaJson wilma = new WilmaJson(appConfig.wilmaUrl, appConfig.wilmaPasswd, appConfig.wilmaUsername, appConfig.wilmaCompanySpesificKey);
+            // First Open Session With Wilma:
+            try
+            {
+                string firstContact = wilma.Login(string.Empty);
+                // Kirjaudutaan
+                string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
+                WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
+                // FormKey = wilmaResponse.FormKey.Split(':')[2];
+                FormKey = wilmaResponse.FormKey;
+
+
+            }
+            catch (Exception ex)
+            {
+                string firstContact = wilma.Login(string.Empty);
+                // Kirjaudutaan
+                string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
+                // Poimitaan formkey
+                WilmaResponse wilmaResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<WilmaResponse>(loginWCookiesResult);
+                // FormKey = wilmaResponse.FormKey.Split(':')[2];
+                FormKey = wilmaResponse.FormKey;
+
+            }
+
+            // Then iterate through messages and send messages
+
+            WilmaMsg firstMsg = new WilmaMsg();
+            string result3 = String.Empty;
+            
+            foreach (var teacher in teacherMessages)
+            { 
+                try
+                    {                    
+                    // If only one message to teacher today:
+                        if (teacher.Value.Count() == 1) 
+                        {
+                           result3 = wilma.Post("messages/compose", teacher.Value.FirstOrDefault());
+                        }
+                        else
+                        {
+                            // Form message from multiple messages but send only one message.
+                            var msgBody = new StringBuilder();
+                            foreach (var mesg in teacher.Value)
+                            {
+                                msgBody.Append(mesg.bodytext + " " + Environment.NewLine);
+                            }
+                             firstMsg = teacher.Value.FirstOrDefault();
+                            firstMsg.bodytext = msgBody.ToString();
+                            firstMsg.FormKey = FormKey;
+                            result3 = wilma.Post("messages/compose", firstMsg);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        // TODO: Handle error messages and report 
-                        //var result2 = wilma.Post("messages/compose/", wilmaViesti);
-
+                    // TODO: Handle error messages and report 
+                    //var result2 = wilma.Post("messages/compose/", wilmaViesti);
+                    // Console.WriteLine("Result3: " + result3);
+                    Console.WriteLine("FirstMsg teacher: " + firstMsg.r_teacher);
+                    Console.WriteLine(ex.Message);
                     }
-                }
             }
+
+
+
         }
 
         private static AlertReceiver GetReceiver(Vastuukouluttaja vastuukouluttaja)
