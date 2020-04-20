@@ -148,9 +148,11 @@ namespace PQ_TiedonLaatuService
                     WordUtil wordUtil = new WordUtil(op.vastuukouluttaja, alertType, op, appConfig.wilmaUrl);
                     ParserUtil parse = new ParserUtil(wordUtil.ReturnWords());
                     string parsedMsgText = parse.ReplaceWithKeyWords(alertType.AlertMsgText);
+                    string parsedHeaderText = parse.ReplaceWithKeyWords(alertType.AlertMsgHeader);
+                    string parsedFooterText = parse.ReplaceWithKeyWords(alertType.AlertMsgSignature);
 
                     // DEBUG: Tanja Personnel (106) Ope (338) + Jani (27)  Ope (339)
-                    WilmaMsg wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
+                    WilmaMsg wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
 
 
                     if (teacherMessages.ContainsKey(teacher))
@@ -263,18 +265,31 @@ namespace PQ_TiedonLaatuService
                     // If only one message to teacher today:
                         if (teacher.Value.Count() == 1) 
                         {
-                           result3 = wilma.Post("messages/compose", teacher.Value.FirstOrDefault());
+                        var mesg = teacher.Value.FirstOrDefault().headertext + " " + Environment.NewLine + teacher.Value.FirstOrDefault().bodytext + " " 
+                            + Environment.NewLine + teacher.Value.FirstOrDefault().footertext;
+                            var teacher1 = teacher.Value.FirstOrDefault();
+                            teacher1.bodytext = mesg;
+                            result3 = wilma.Post("messages/compose", teacher1);
                         }
                         else
                         {
                             // Form message from multiple messages but send only one message.
-                            var msgBody = new StringBuilder();
-                            foreach (var mesg in teacher.Value)
+                            var msgBody = new StringBuilder(); string header = String.Empty; string footer = String.Empty;
+
+                            header = teacher.Value.FirstOrDefault().headertext;
+                            footer = teacher.Value.FirstOrDefault().footertext;
+                        msgBody.Append(header + " " + Environment.NewLine);
+
+
+                        foreach (var mesg in teacher.Value)
                             {
-                                msgBody.Append(mesg.bodytext + " " + Environment.NewLine);
+                                msgBody.Append(mesg.bodytext);
+                             
                             }
+                        msgBody.Append(" " + Environment.NewLine + footer);
                              firstMsg = teacher.Value.FirstOrDefault();
-                            firstMsg.bodytext = msgBody.ToString();
+                            
+                            firstMsg.bodytext =  msgBody.ToString();
                             firstMsg.FormKey = FormKey;
                             result3 = wilma.Post("messages/compose", firstMsg);
                         }

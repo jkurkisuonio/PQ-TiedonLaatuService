@@ -8,6 +8,8 @@ namespace PQ_TiedonLaatuService.Models
     {
         public string FormKey { get; set; }
         public string bodytext { get; set; }
+        public string headertext { get; set; }
+        public string footertext { get; set; }
         public string Subject { get; set; }
         public bool ShowRecipients { get; set; }
         public bool CollatedReplies { get; set; }

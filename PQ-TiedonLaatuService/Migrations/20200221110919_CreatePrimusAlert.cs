@@ -33,8 +33,7 @@ namespace PQ_TiedonLaatuService.Migrations
                     PrimusAlertID = table.Column<int>(nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     CardNumber = table.Column<string>(nullable: true),
-                    SentDate = table.Column<DateTime>(nullable: false),
-                    ReceiverCardNumber = table.Column<string>(nullable: true),
+                    SentDate = table.Column<DateTime>(nullable: false),                    
                     AlertTypeId = table.Column<int>(nullable: true)
                 },
                 constraints: table =>

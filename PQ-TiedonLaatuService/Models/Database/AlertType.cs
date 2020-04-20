@@ -16,7 +16,9 @@ namespace PQ_TiedonLaatuService.Models.Database
         public string Description { get; set; }
         public string QueryString { get; set; }
         public string QueryName { get; set; }
+        public string AlertMsgHeader { get; set; }
         public string AlertMsgText { get; set; }
+        public string AlertMsgSignature { get; set; }
         public string AlertMsgSubject { get; set; }
         public bool IsInUse { get; set; }
         public virtual ICollection<PrimusAlert> PrimusAlerts { get; set; }
