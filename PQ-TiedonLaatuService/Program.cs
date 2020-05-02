@@ -77,32 +77,49 @@ namespace PQ_TiedonLaatuService
                 // reading to the end of its redirected stream.
                 // p.WaitForExit();
                 // Read the output stream first and then wait.
+            
                 string output = p.StandardOutput.ReadToEnd();
                 p.WaitForExit();
+              
+                
+                
+                
+                
                 string resultString = output.Replace(";\r\n", string.Empty);
                 resultString = resultString.Replace("\r\n", string.Empty);
+                resultString = resultString.Replace("├ñ", "ä");
+                resultString = resultString.Replace("õ", "ä");
+                resultString = resultString.Replace("÷", "ö");
 
                 // Result from primusquery must start with string <<<< OUTPUT >>>> !
                 string[] resultStrings = resultString.Split("<<<< OUTPUT >>>>", StringSplitOptions.None);
-                if (resultString.Count() > 1) resultString = resultStrings[1];
+                if (resultStrings.Count() > 1) resultString = resultStrings[1];
                 else
                 {
-                    // Error, did not get appropriate response from Primus
+                    // Did not get anything as result from Primus. Either there is no result or Error, did not get appropriate response from Primus
                     // TODO: Log error to Windows Log and program-wide Logging solution - if available.
-                    Console.WriteLine("Error. Did not get apropriate response from Primus.");
+                    Console.WriteLine("Empty result. Did not get apropriate response from Primus.");
+
                     // Using Error Code 24 to indicate not enough lines.
                     // Microsoft conventions: https://docs.microsoft.com/fi-fi/windows/win32/debug/system-error-codes--0-499-?redirectedfrom=MSDN
-                    Environment.Exit(24);
-                }
+                    // Environment.Exit(24);
 
-                XDocument doc = XDocument.Parse(resultString);
+                    // Continue with next PrimusQuery
+                    continue;
+                }
+                XDocument doc;
+                
+                doc = XDocument.Parse(resultString);
+                
 
                 List<Opiskelija> opiskelijat = new List<Opiskelija>();
                 foreach (var opisk in doc.Descendants("opiskelija"))
                 {
                     var opiskelija = new Opiskelija();
+                    
                     opiskelija.etunimi = opisk.Element("etunimi").Value;
                     opiskelija.sukunimi = opisk.Element("sukunimi").Value;
+                    
                     opiskelija.korttinumero = opisk.Element("korttinumero").Value;
                     XElement vastuukouluttaja = opisk.Element("vastuukouluttaja");
                     string email = vastuukouluttaja.Element("email").Value;
@@ -152,7 +169,8 @@ namespace PQ_TiedonLaatuService
                     string parsedFooterText = parse.ReplaceWithKeyWords(alertType.AlertMsgSignature);
 
                     // DEBUG: Tanja Personnel (106) Ope (338) + Jani (27)  Ope (339)
-                    WilmaMsg wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
+                    //WilmaMsg wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
+                    WilmaMsg wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_teacher = "339" };
 
 
                     if (teacherMessages.ContainsKey(teacher))
@@ -365,62 +383,62 @@ namespace PQ_TiedonLaatuService
 
 
 
-            static void Main2(string[] args)
-            {
-                // Configuration
-                var builder = new ConfigurationBuilder()
-                     .SetBasePath(Directory.GetCurrentDirectory())
-                     .AddJsonFile("appsettings.json");
+        //    static void Main2(string[] args)
+        //    {
+        //        // Configuration
+        //        var builder = new ConfigurationBuilder()
+        //             .SetBasePath(Directory.GetCurrentDirectory())
+        //             .AddJsonFile("appsettings.json");
 
-                var config = builder.Build();
+        //        var config = builder.Build();
 
-                var appConfig = config.GetSection("application").Get<Application>();
+        //        var appConfig = config.GetSection("application").Get<Application>();
 
-                Console.WriteLine("Application Name : {appConfig.Path2PQExe}");
+        //        Console.WriteLine("Application Name : {appConfig.Path2PQExe}");
 
 
 
-                Process cmd = new Process();
-                cmd.StartInfo.FileName = "cmd.exe";
-                cmd.StartInfo.RedirectStandardInput = true;
-                cmd.StartInfo.RedirectStandardOutput = true;
-                cmd.StartInfo.CreateNoWindow = true;
-                cmd.StartInfo.UseShellExecute = false;
-                cmd.Start();
-                string komentorivi = '\u0022' + appConfig.Path2PQExe + @"\primusquery.exe" + '\u0022' + " " + '\u0022' + appConfig.Path2PQConfiguration + '\u0022';
+        //        Process cmd = new Process();
+        //        cmd.StartInfo.FileName = "cmd.exe";
+        //        cmd.StartInfo.RedirectStandardInput = true;
+        //        cmd.StartInfo.RedirectStandardOutput = true;
+        //        cmd.StartInfo.CreateNoWindow = true;
+        //        cmd.StartInfo.UseShellExecute = false;
+        //        cmd.Start();
+        //        string komentorivi = '\u0022' + appConfig.Path2PQExe + @"\primusquery.exe" + '\u0022' + " " + '\u0022' + appConfig.Path2PQConfiguration + '\u0022';
 
-                Console.WriteLine("Komentorivi: " + komentorivi);
-                cmd.StandardInput.WriteLine(komentorivi);
-                cmd.StandardInput.Flush();
-                cmd.StandardInput.Close();
-                cmd.WaitForExit();
+        //        Console.WriteLine("Komentorivi: " + komentorivi);
+        //        cmd.StandardInput.WriteLine(komentorivi);
+        //        cmd.StandardInput.Flush();
+        //        cmd.StandardInput.Close();
+        //        cmd.WaitForExit();
 
-                // Operoi tiedostosta tyhjät rivit pois.                    
-                string myPath = appConfig.Path2WorkDir + "halytys1.csv".ToString();
-                //if (File.Exists(appConfig.Path2WorkDir + "opsot2019.csv"))          
-                if (File.Exists((myPath)))
-                {
-                    Console.WriteLine(appConfig.Path2WorkDir);
-                    string text = System.IO.File.ReadAllText((@appConfig.@Path2WorkDir) + "halytys1.csv", Encoding.UTF8);
-                    var resultString = Regex.Replace(text, @"^\s+$[\r\n]*", string.Empty, RegexOptions.Multiline);
-                    System.IO.File.WriteAllText(appConfig.Path2PQResultDir + "halytys1.csv", resultString, Encoding.UTF8);
-                    // POISTETAAN TYÖTIEDOSTO.
-                    var fullPath = appConfig.Path2WorkDir + "halytys1.csv";
-                    File.Delete(appConfig.Path2WorkDir + "halytys1.csv");
-                    // OTETAAN BACKUP VARSINAISESTA.
-                    File.Copy(appConfig.Path2PQResultDir + "halytys.csv", appConfig.Path2PQResultDir + "halytys.bak", true);
-                    var fullPath2 = appConfig.Path2PQResultDir + "halytys1.csv";
-                    var fullPathBak = appConfig.Path2PQResultDir + "halytys.bak";
-                }
-                else
-                {
-                    // Virhe! Ei saatu tiedostoa, lähetä sähköpostia ja kirjoita lokiin.
-                    var resultString = "VIRHE! Yhteys Primukseen ei toimi, tai muu virhe. Ei voitu muodostaa opsot.csv tiedostoa.  TODETTU: " + DateTime.Now + Environment.NewLine + " VARMUUSKOPIO EDELLISESTÄ TOIMIVASTA Opsot.csv tiedostosta löytyy tästä hakemistosta nimellä opsot.bak";
-                    var fullPath = appConfig.Path2PQResultDir + "halytys1.csv";
-                    System.IO.File.WriteAllText(appConfig.Path2PQResultDir + "opsot.csv", resultString, Encoding.UTF8);
-                }
-            }
-        }
+        //        // Operoi tiedostosta tyhjät rivit pois.                    
+        //        string myPath = appConfig.Path2WorkDir + "halytys1.csv".ToString();
+        //        //if (File.Exists(appConfig.Path2WorkDir + "opsot2019.csv"))          
+        //        if (File.Exists((myPath)))
+        //        {
+        //            Console.WriteLine(appConfig.Path2WorkDir);
+        //            string text = System.IO.File.ReadAllText((@appConfig.@Path2WorkDir) + "halytys1.csv", Encoding.UTF8);
+        //            var resultString = Regex.Replace(text, @"^\s+$[\r\n]*", string.Empty, RegexOptions.Multiline);
+        //            System.IO.File.WriteAllText(appConfig.Path2PQResultDir + "halytys1.csv", resultString, Encoding.UTF8);
+        //            // POISTETAAN TYÖTIEDOSTO.
+        //            var fullPath = appConfig.Path2WorkDir + "halytys1.csv";
+        //            File.Delete(appConfig.Path2WorkDir + "halytys1.csv");
+        //            // OTETAAN BACKUP VARSINAISESTA.
+        //            File.Copy(appConfig.Path2PQResultDir + "halytys.csv", appConfig.Path2PQResultDir + "halytys.bak", true);
+        //            var fullPath2 = appConfig.Path2PQResultDir + "halytys1.csv";
+        //            var fullPathBak = appConfig.Path2PQResultDir + "halytys.bak";
+        //        }
+        //        else
+        //        {
+        //            // Virhe! Ei saatu tiedostoa, lähetä sähköpostia ja kirjoita lokiin.
+        //            var resultString = "VIRHE! Yhteys Primukseen ei toimi, tai muu virhe. Ei voitu muodostaa opsot.csv tiedostoa.  TODETTU: " + DateTime.Now + Environment.NewLine + " VARMUUSKOPIO EDELLISESTÄ TOIMIVASTA Opsot.csv tiedostosta löytyy tästä hakemistosta nimellä opsot.bak";
+        //            var fullPath = appConfig.Path2PQResultDir + "halytys1.csv";
+        //            System.IO.File.WriteAllText(appConfig.Path2PQResultDir + "opsot.csv", resultString, Encoding.UTF8);
+        //        }
+        //    }
+        //}
 
 
     } 
