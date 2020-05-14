@@ -1,4 +1,4 @@
 # PQ-TiedonLaatuService
 PQ-TiedonLaatuService
 
-See PQ-TiedonLaatuService for installation instructions.
+See PQ-TiedonLaatuService directory for installation instructions.
