@@ -6,19 +6,16 @@ To Install:
 U:\Path\To\primusquery.exe address.of.your.primus.server 1222 primusqueryaccount primusqueryaccountpassword
 
 
-4. Create file "appsettings.json" in root of your project With following content:
+4. Create file "appsettings.json" in root of your project with following content, and replace keys with appropriate ones:
 
 {
   "application": {
-    "Path2PQExe": "U:\\Directory\\Path\\",
-    "CmdFilename": "primusquery.cmd",
-    "Path2PQConfiguration": "PQ\\jani\\alarm1.txt",
-    "Path2PQResultDir": "PQ\\results\\",
-    "Path2WorkDir": "PQ\\results\\",
-    "wilmaCompanySpesificKey": "yourCompanySpesificKeyHere",
-    "wilmaUrl": "https://urlForWilma",
-    "wilmaUsername": "usernameForWilmaServiceAccount",
-    "wilmaPasswd": "passwordForWilmaServiceAccount"
+    "SourceCmdFilename": "primuskysely.source",
+    "DestinationCmdFileName": "primuskysely.cmd",
+    "wilmaCompanySpesificKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "wilmaUrl": "https://wilma.xxxxxxx.fi/",
+    "wilmaUsername": "xxxxxxx ",
+    "wilmaPasswd": "xxxxxxxxx"
   },  
     "Logging": {
       "LogLevel": {
@@ -29,6 +26,21 @@ U:\Path\To\primusquery.exe address.of.your.primus.server 1222 primusqueryaccount
     },
     "AllowedHosts": "*",
   "ConnectionStrings": {
-    "PrimusAlertContext": "Server=localhost\\SQLEXPRESS;;Database=PrimusAlert;Trusted_Connection=True;MultipleActiveResultSets=true"
+    "PrimusAlertContext": "Serv-er=localhost\\SQLEXPRESS;;Database=PrimusAlert;Trusted_Connection=True;MultipleActiveResultSets=true"
   }
   }
+
+(You need your organizations WilmaCompanySpesificKey, WilmaUrl for Url of your Wilma web-address, typically wilma.organizationname.fi, WilmaUsername & password for useraccount with appropriate rights to send Wilma messages, your wilma Url address, and SQL Server-connection string)
+
+5. You also need to create a file that is referenced with key "SourceCmdFileName" inside that file, you should have appropriate command line to execute Primus queries, here's example:
+
+\Path\to\primusquery.exe primus-server-address 1222 primusqueryaccount primusquerypasswd
+
+Where \Path\to\primusquery.exe is the location of your primusquery.exe in server.
+primus-server-address is ip or name address of Primus-server
+1222 is default port for Primus
+primusqueryaccount is your service account for running PrimusQueries
+primusquerypasswd is password for your service account.
+
+6. Now you should have everything configured for server-part of this software. You should now continue configuring userinterface and
+install project PQ-TidenLaatu-UI
