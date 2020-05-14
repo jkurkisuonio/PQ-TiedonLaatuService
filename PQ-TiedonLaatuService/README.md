@@ -1,3 +1,6 @@
+This is the service part of Information quality alert system for Primus school administration. Schedule this to run once in a day to remind teachers and students for particular tasks to be completed in Wilma.
+
+
 To Install:
 
 1. Clone project from Git and open project with Visual Studio.
