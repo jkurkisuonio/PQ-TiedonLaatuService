@@ -1,6 +1,6 @@
 To Install:
 
-1. Clone project from Git
+1. Clone project from Git and open project with Visual Studio.
 2. Use Update-Database at Nuget Command-line
 3. Create commandline file to run Primusquery.exe - you can name it primusquery.cmd - with following content:
 U:\Path\To\primusquery.exe address.of.your.primus.server 1222 primusqueryaccount primusqueryaccountpassword
