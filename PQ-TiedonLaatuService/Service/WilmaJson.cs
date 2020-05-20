@@ -139,13 +139,21 @@ namespace PQ_TiedonLaatuService.Service
             postStream.Close();
 
             // Get the login status from the service
-            var response = (HttpWebResponse)request.GetResponse();
-            var reader = new StreamReader(response.GetResponseStream());
-            var jsonResponseString = reader.ReadToEnd();
-            values = JsonConvert.DeserializeObject<IndexJson>(jsonResponseString);
-            reader.Close();
-            response.Close();
-            return jsonResponseString;
+            HttpWebResponse response;
+            try {
+                 response = (HttpWebResponse)request.GetResponse();
+                var reader = new StreamReader(response.GetResponseStream());
+                var jsonResponseString = reader.ReadToEnd();
+                values = JsonConvert.DeserializeObject<IndexJson>(jsonResponseString);
+                reader.Close();
+                response.Close();
+                return jsonResponseString;
+            }
+            catch (Exception ex)
+            {
+                return String.Empty;
+            }
+
         }
 
         public void ComputeHash(IndexJson indexJson)
