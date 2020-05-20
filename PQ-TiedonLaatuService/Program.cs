@@ -15,6 +15,7 @@ using PQ_TiedonLaatuService.Models;
 using PQ_TiedonLaatuService.Models.Database;
 using PQ_TiedonLaatuService.Service;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace PQ_TiedonLaatuService
 {
@@ -134,6 +135,8 @@ namespace PQ_TiedonLaatuService
                     // Check whenether there is already a receiver.
                     AlertReceiver receiver = GetReceiver(opiskelija.vastuukouluttaja);
 
+                
+
                     using (PrimusAlertContext context = new PrimusAlertContext())
                     {
                         var pa = new PrimusAlert()
@@ -149,11 +152,21 @@ namespace PQ_TiedonLaatuService
 
                         context.PrimusAlerts.Add(pa);
                         context.SaveChanges();
-                    }
 
+                        // If alert is set to be send only once for each case - check if send already and skip sending email for that matter.
+                        if (alertType.OnlyOnce)
+                        {
+                            List<PrimusAlert> q = (from a in context.PrimusAlerts where a.AlertType.Id == alertType.Id && a.AlertReceiver.Id == receiver.Id && a.CardNumber == opiskelija.korttinumero select a).ToList();
+                            if (q.Count() > 1) continue;
+
+                        }
+
+
+                    }
+                    
 
                 }
-                // TODO: Sitten tallennetaan hälytys tietokantaan. Hälytys tyyppi, korttinumero, pvm ja vastaanottaja
+                
                 string FormKey = String.Empty; 
                 foreach (Opiskelija op in opiskelijat)
                 {

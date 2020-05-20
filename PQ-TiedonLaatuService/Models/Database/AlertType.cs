@@ -21,6 +21,7 @@ namespace PQ_TiedonLaatuService.Models.Database
         public string AlertMsgSignature { get; set; }
         public string AlertMsgSubject { get; set; }
         public bool IsInUse { get; set; }
+        public bool OnlyOnce { get; set; }
         public virtual ICollection<PrimusAlert> PrimusAlerts { get; set; }
     }
 }
