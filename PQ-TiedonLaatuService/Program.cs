@@ -30,15 +30,17 @@ namespace PQ_TiedonLaatuService
             // Collect messages to same teacher - so that only one daily resume message can be send to each teacher.
             var teacherMessages = new Dictionary<string, List<WilmaMsg>>();
             // Debug?
-            bool debug = false;
+            bool debug = false; bool force = false;
             if (args.Contains("debug")) debug = true;
-            
-          
+            if (args.Contains("force")) force = true;
+
+
 
 
             // Get the alert type - first one 
             // TODO: Iterate trough all alert types     
 
+            
             var alertTypes = new List<AlertType>();
 
             using (PrimusAlertContext context = new PrimusAlertContext())
@@ -130,7 +132,7 @@ namespace PQ_TiedonLaatuService
                     string email = vastuukouluttaja.Element("email").Value;
                     string korttinumero = vastuukouluttaja.Element("korttinumero").Value;
                     opiskelija.vastuukouluttaja = new Vastuukouluttaja { email = email, korttinumero = korttinumero };
-                    opiskelijat.Add(opiskelija);
+                    
 
                     // Check whenether there is already a receiver.
                     AlertReceiver receiver = GetReceiver(opiskelija.vastuukouluttaja);
@@ -154,7 +156,7 @@ namespace PQ_TiedonLaatuService
                         context.SaveChanges();
 
                         // If alert is set to be send only once for each case - check if send already and skip sending email for that matter.
-                        if (alertType.OnlyOnce)
+                        if (alertType.OnlyOnce && !force)
                         {
                             List<PrimusAlert> q = (from a in context.PrimusAlerts where a.AlertType.Id == alertType.Id && a.AlertReceiver.Id == receiver.Id && a.CardNumber == opiskelija.korttinumero select a).ToList();
                             if (q.Count() > 1) continue;
@@ -163,8 +165,8 @@ namespace PQ_TiedonLaatuService
 
 
                     }
-                    
 
+                    opiskelijat.Add(opiskelija);
                 }
                 
                 string FormKey = String.Empty; 
@@ -183,7 +185,7 @@ namespace PQ_TiedonLaatuService
                     // DEBUG: Tanja Personnel (106) Ope (338) + Jani (27)  Ope (339)
                     //WilmaMsg wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
                     //WilmaMsg wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_teacher = "339" };
-                     WilmaMsg wilmaViesti2 = !debug ? new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_teacher = op.vastuukouluttaja.korttinumero } :
+                     WilmaMsg wilmaViesti2 = !debug ? new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = op.vastuukouluttaja.korttinumero } :
                                                        new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" }; 
                                                      // new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_teacher = "339" }; 
 

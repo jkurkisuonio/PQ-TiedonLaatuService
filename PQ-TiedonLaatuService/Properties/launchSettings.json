@@ -1,8 +1,7 @@
 {
   "profiles": {
     "PQ-TiedonLaatuService": {
-      "commandName": "Project",
-      "commandLineArgs": " debug"
+      "commandName": "Project"
     }
   }
 }
