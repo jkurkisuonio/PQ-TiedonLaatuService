@@ -92,12 +92,20 @@ namespace PQ_TiedonLaatuService
                 string output = p.StandardOutput.ReadToEnd();
                 p.WaitForExit();
 
-                string resultString = output.Replace(";\r\n", string.Empty);
-                resultString = resultString.Replace("\r\n", string.Empty);
-                resultString = resultString.Replace("├ñ", "ä");
-                resultString = resultString.Replace("õ", "ä");
-                resultString = resultString.Replace("÷", "ö");
 
+                //var xmlEscapedValue = output.XReplace('<'.Tpl("&lt;"),'>'.Tpl("&gt;"),'\"'.Tpl("&quot;"),'\''.Tpl("&apos;"),'&'.Tpl("&amp;"));
+
+
+                //string resultString = output.Replace(";\r\n", string.Empty);
+                //resultString = resultString.Replace("\r\n", string.Empty);
+                //resultString = resultString.Replace("├ñ", "ä");
+                //resultString = resultString.Replace("õ", "ä");
+                //resultString = resultString.Replace("÷", "ö");
+                //resultString = resultString.Replace("├Â", "ö");
+
+                var xmlEntityReplacements = new Dictionary<string, string> {{ ";\r\n", string.Empty }, { "\r\n", string.Empty },  { "├ñ", "ä" },  { "õ", "ä" },  { "÷", "ö" }, { "├Â", "ö" } };
+
+                string resultString = StringOp.ReplaceXmlEntity(output, xmlEntityReplacements);
                 // Result from primusquery must start with string <<<< OUTPUT >>>> !
                 string[] resultStrings = resultString.Split("<<<< OUTPUT >>>>", StringSplitOptions.None);
                 if (resultStrings.Count() > 1) resultString = resultStrings[1];
@@ -258,8 +266,15 @@ namespace PQ_TiedonLaatuService
                         teacher1.FormKey = FormKey;   
                         teacher1.bodytext = mesg;
                     try { 
+                        if (teacher1.r_teacher == "25")
+                        {
+                            // Do Nothing
+                            Console.WriteLine("Skip. Rami Pukkinen");
+                            Console.WriteLine(teacher1.Subject);
 
-                        result3 = wilma.Post("messages/compose", teacher1);
+
+                        }
+                        else result3 = wilma.Post("messages/compose", teacher1);
                     }
                     catch (Exception ex)
                     {

@@ -352,3 +352,5 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 /PQ-TiedonLaatuService/appsettings.json
+/PQ-TiedonLaatuService/TupleExtensions.cs
+/PQ-TiedonLaatuService/StringExtensions.cs

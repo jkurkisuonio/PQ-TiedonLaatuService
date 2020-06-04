@@ -27,7 +27,7 @@ namespace PQ_TiedonLaatuService
             words.Add("DateTimeNow", DateTime.Now.ToShortDateString());
             words.Add("ReceiverEmail", vastuukouluttaja.email);
             words.Add("AlertTypeName", alertType.Name);
-            words.Add("StudentName", opiskelija.etunimi + " " + opiskelija.sukunimi);
+            words.Add("StudentName",  opiskelija.sukunimi + " " + opiskelija.etunimi);
             //  words.Add("WilmaStudentUrl", "§§[[" + wilmaUrl + "profiles/students/" + opiskelija.korttinumero + "]]§§[[" + wilmaUrl + "profiles/students/" + opiskelija.korttinumero +"]]");
             words.Add("WilmaStudentUrl", "§§§§[[" + wilmaUrl + "profiles/students/" + opiskelija.korttinumero + "]]");
             return words;
