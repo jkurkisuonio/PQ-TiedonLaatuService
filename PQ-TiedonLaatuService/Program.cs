@@ -34,9 +34,6 @@ namespace PQ_TiedonLaatuService
             if (args.Contains("debug")) debug = true;
             if (args.Contains("force")) force = true;
 
-
-
-
             // Get the alert type - first one 
             // TODO: Iterate trough all alert types     
 
@@ -57,8 +54,12 @@ namespace PQ_TiedonLaatuService
 
 
             // Loop through alerttypes
+
             foreach (var alertType in alertTypes)
-            {
+            // DEBUG:
+            //    foreach (var alertType in alertTypes.Skip(6))
+            // DEBUG END:
+                {
                
 
 
@@ -67,7 +68,7 @@ namespace PQ_TiedonLaatuService
                     String.IsNullOrEmpty(alertType.AlertMsgText) || String.IsNullOrEmpty(alertType.AlertMsgSubject)) continue;
 
 
-                Console.WriteLine("Application Name : {appConfig.Path2PQExe}");
+                Console.WriteLine("Alert Type : " + alertType.Name);
 
                 // Start the child process.
                 Process p = new Process();
@@ -143,9 +144,7 @@ namespace PQ_TiedonLaatuService
                     
 
                     // Check whenether there is already a receiver.
-                    AlertReceiver receiver = GetReceiver(opiskelija.vastuukouluttaja);
-
-                
+                    AlertReceiver receiver = GetReceiver(opiskelija.vastuukouluttaja);                
 
                     using (PrimusAlertContext context = new PrimusAlertContext())
                     {
@@ -157,7 +156,6 @@ namespace PQ_TiedonLaatuService
                             //AlertReceiver = receiver,
                             //AlertType = alertType,
                             AlertTypeId = alertType.Id
-
                         };
 
                         context.PrimusAlerts.Add(pa);
@@ -166,7 +164,8 @@ namespace PQ_TiedonLaatuService
                         // If alert is set to be send only once for each case - check if send already and skip sending email for that matter.
                         if (alertType.OnlyOnce && !force)
                         {
-                            List<PrimusAlert> q = (from a in context.PrimusAlerts where a.AlertType.Id == alertType.Id && a.AlertReceiver.Id == receiver.Id && a.CardNumber == opiskelija.korttinumero select a).ToList();
+                            List<PrimusAlert> q = 
+                                (from a in context.PrimusAlerts where a.AlertType.Id == alertType.Id && a.AlertReceiver.Id == receiver.Id && a.CardNumber == opiskelija.korttinumero select a).ToList();
                             if (q.Count() > 1) continue;
 
                         }
@@ -182,33 +181,71 @@ namespace PQ_TiedonLaatuService
                 {
                
                     string teacher = op.vastuukouluttaja.korttinumero;
-
-
                     WordUtil wordUtil = new WordUtil(op.vastuukouluttaja, alertType, op, appConfig.wilmaUrl);
                     ParserUtil parse = new ParserUtil(wordUtil.ReturnWords());
                     string parsedMsgText = parse.ReplaceWithKeyWords(alertType.AlertMsgText);
                     string parsedHeaderText = parse.ReplaceWithKeyWords(alertType.AlertMsgHeader);
                     string parsedFooterText = parse.ReplaceWithKeyWords(alertType.AlertMsgSignature);
 
-                    // DEBUG: Tanja Personnel (106) Ope (338) + Jani (27)  Ope (339)
+                    // DEBUG:
                     //WilmaMsg wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
                     //WilmaMsg wilmaViesti2 = new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_teacher = "339" };
-                     WilmaMsg wilmaViesti2 = !debug ? new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = op.vastuukouluttaja.korttinumero } :
-                                                       new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" }; 
-                                                     // new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_teacher = "339" }; 
+                    WilmaMsg wilmaViesti2 = new WilmaMsg();
+
+                   // WilmaMsg wilmaViesti2 = !debug ? new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = op.vastuukouluttaja.korttinumero } :
+                    //                                   new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" };
+                    // new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_teacher = "339" }; 
+
+                    // DEBUG: Test teachers
+                    // var debugstaffWilmaCardNumbers = new List<string> { "339", "338" };
+                    // DEBUG END:
+
+                    string[] vastuukouluttajat = op.vastuukouluttaja.korttinumero.Split(',');
+                    var wilmaViestit = new List<WilmaMsg>();
+
+                        // DEBUG:
+                        //if (debugstaffWilmaCardNumbers.Any(x => op.vastuukouluttaja.korttinumero.Contains(x)))
+                        // DEBUG END:
+                        {
+                            foreach (string vastuukouluttaja in vastuukouluttajat)
+                            {
+                                WilmaMsg wilmaViesti3 = !debug?  new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = vastuukouluttaja } :
+                                                                 new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" }; ;
+                                wilmaViestit.Add(wilmaViesti3);
+
+                                if (teacherMessages.ContainsKey(vastuukouluttaja + "-" + alertType.Name))
+                                {
+                                    // Already
+                                    teacherMessages[vastuukouluttaja + "-" + alertType.Name].Add(wilmaViesti3);
+                                }
+                                else
+                                {
+                                    // New teacher
+                                    teacherMessages.Add(vastuukouluttaja + "-" + alertType.Name, new List<WilmaMsg> { wilmaViesti3 });
+
+                                }
 
 
-                    if (teacherMessages.ContainsKey(teacher + "-" + alertType.Name))
-                    {
-                        // Allready
-                        teacherMessages[teacher + "-" + alertType.Name].Add(wilmaViesti2);
-                    }
-                    else
-                    {
-                        // New teacher
-                        teacherMessages.Add(teacher + "-" + alertType.Name, new List<WilmaMsg> { wilmaViesti2 });
+                            }
+                        }
 
-                    }
+                        // DEBUG:
+                        //else continue;
+                        // DEBUG END:
+                    
+
+                    
+                    //if (teacherMessages.ContainsKey(teacher + "-" + alertType.Name))
+                    //{
+                    //    // Allready
+                    //    teacherMessages[teacher + "-" + alertType.Name].Add(wilmaViesti2);
+                    //}
+                    //else
+                    //{
+                    //    // New teacher
+                    //    teacherMessages.Add(teacher + "-" + alertType.Name, new List<WilmaMsg> { wilmaViesti2 });
+
+                    //}
                   
                 }
             }
@@ -304,12 +341,14 @@ namespace PQ_TiedonLaatuService
                         firstMsg.FormKey = FormKey;
                     try
                     {
-                        result3 = wilma.Post("messages/compose", firstMsg);
+                        if (teacher.Value != null) result3 = wilma.Post("messages/compose", firstMsg);
                     }
                     catch (Exception ex)
                     {
                         // TODO: Log Errors to central destination
                         Console.WriteLine("FirstMsg teacher: " + firstMsg.r_teacher);
+                        
+                        Console.WriteLine("EX Message: " + ex.Message.ToString());
                         Console.WriteLine(ex.Message);                        
                         // result3 = wilma.Post("messages/compose", firstMsg);
                     }
