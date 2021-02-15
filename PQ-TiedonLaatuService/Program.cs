@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Microsoft.Extensions.Logging;
 
 using System.Text;
 using System.Text.RegularExpressions;
@@ -27,6 +28,23 @@ namespace PQ_TiedonLaatuService
         /// <param name="args"></param>
         static void Main(string[] args)
         {
+            string logResp = String.Empty;
+            using var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder
+                    .AddFilter("Microsoft", LogLevel.Warning)
+                    .AddFilter("System", LogLevel.Warning)
+                    .AddFilter("PQTiedonLaatuService.Program.Main", LogLevel.Debug)
+                    .AddConsole()
+                    .AddEventLog();
+            });
+            ILogger logger = loggerFactory.CreateLogger<Program>();
+            //logger.LogInformation("Example log message");
+            StringBuilder logStr = new StringBuilder();
+            logStr.Append(" PQTiedonlaatuservice-job started at: " + DateTime.Now + Environment.NewLine);
+
+
+
             // Collect messages to same teacher - so that only one daily resume message can be send to each teacher.
             var teacherMessages = new Dictionary<string, List<WilmaMsg>>();
             // Debug?
@@ -69,6 +87,7 @@ namespace PQ_TiedonLaatuService
 
 
                 Console.WriteLine("Alert Type : " + alertType.Name);
+                logStr.Append("Alert Type : " + alertType.Name + Environment.NewLine);
 
                 // Start the child process.
                 Process p = new Process();
@@ -114,7 +133,10 @@ namespace PQ_TiedonLaatuService
                 {
                     // Did not get anything as result from Primus. Either there is no result or Error, did not get appropriate response from Primus
                     // TODO: Log error to Windows Log and program-wide Logging solution - if available.
-                    Console.WriteLine("Empty result. Did not get apropriate response from Primus.");
+
+                    logResp = "Empty result. Did not get apropriate response from Primus.";
+                    Console.WriteLine(logResp);                    
+                    logStr.Append(logResp);
 
                     // Using Error Code 24 to indicate not enough lines.
                     // Microsoft conventions: https://docs.microsoft.com/fi-fi/windows/win32/debug/system-error-codes--0-499-?redirectedfrom=MSDN
@@ -250,10 +272,22 @@ namespace PQ_TiedonLaatuService
                 }
             }
 
+
+
             // Send messages through Wilma
+            logResp = "TeacherMessages: " + teacherMessages.Count() + Environment.NewLine;
+            foreach (var x in teacherMessages)
+            {
+                logResp += x.Key + " : " + x.Value.Count() + " kpl. " + Environment.NewLine;
+            }
+
+            
+            Console.WriteLine(logResp);
+            logStr.Append(logResp + Environment.NewLine);
+            
             SendMessages(teacherMessages, appConfig);
 
-
+            logger.LogInformation("PQTiedonlaatuservice - job ended at: " + logStr.ToString());
         }
 
         private static void SendMessages(Dictionary<string, List<WilmaMsg>> teacherMessages, Application appConfig)

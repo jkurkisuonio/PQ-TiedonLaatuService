@@ -2,7 +2,7 @@
   "profiles": {
     "PQ-TiedonLaatuService": {
       "commandName": "Project",
-      "commandLineArgs": "force"
+      "commandLineArgs": "force debug"
     }
   }
 }
