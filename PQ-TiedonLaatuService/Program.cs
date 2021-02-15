@@ -287,7 +287,7 @@ namespace PQ_TiedonLaatuService
             
             SendMessages(teacherMessages, appConfig);
 
-            logger.LogInformation("PQTiedonlaatuservice - job ended at: " + logStr.ToString());
+            logger.LogInformation(logStr.ToString() + Environment.NewLine + " PQTiedonlaatuservice - job ended at: " + DateTime.Now );
         }
 
         private static void SendMessages(Dictionary<string, List<WilmaMsg>> teacherMessages, Application appConfig)
