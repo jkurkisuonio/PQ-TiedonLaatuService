@@ -284,14 +284,16 @@ namespace PQ_TiedonLaatuService
             
             Console.WriteLine(logResp);
             logStr.Append(logResp + Environment.NewLine);
-            
-            SendMessages(teacherMessages, appConfig);
 
-            logger.LogInformation(logStr.ToString() + Environment.NewLine + " PQTiedonlaatuservice - job ended at: " + DateTime.Now );
+            string sendMessagesErrors = SendMessages(teacherMessages, appConfig).ToString();
+
+            logger.LogInformation(logStr.ToString() + Environment.NewLine + (!String.IsNullOrEmpty(sendMessagesErrors) ? " SendMessage Errors: " + sendMessagesErrors : String.Empty)
+                + Environment.NewLine + " PQTiedonlaatuservice - job ended at: " + DateTime.Now );
         }
 
-        private static void SendMessages(Dictionary<string, List<WilmaMsg>> teacherMessages, Application appConfig)
+        private static StringBuilder SendMessages(Dictionary<string, List<WilmaMsg>> teacherMessages, Application appConfig)
         {
+            StringBuilder err = new StringBuilder();
             string FormKey = String.Empty;
             // First Connect to Wilma.
             WilmaJson wilma = new WilmaJson(appConfig.wilmaUrl, appConfig.wilmaPasswd, appConfig.wilmaUsername, appConfig.wilmaCompanySpesificKey);
@@ -309,6 +311,7 @@ namespace PQ_TiedonLaatuService
             }
             catch (Exception ex)
             {
+                err.Append(Environment.NewLine + ex.Message + Environment.NewLine);
                 string firstContact = wilma.Login(string.Empty);
                 // Kirjaudutaan
                 string loginWCookiesResult = wilma.LoginWCookies(appConfig.wilmaUrl + "login");
@@ -349,8 +352,7 @@ namespace PQ_TiedonLaatuService
                     }
                     catch (Exception ex)
                     {
-                        // TODO: Log errors.
-                        // result3 = wilma.Post("messages/compose", teacher1);
+                        err.Append(Environment.NewLine + ex.Message.ToString() + Environment.NewLine);
                     }
                     }
                     else
@@ -380,9 +382,11 @@ namespace PQ_TiedonLaatuService
                     catch (Exception ex)
                     {
                         // TODO: Log Errors to central destination
+                        err.Append(Environment.NewLine + ex.Message.ToString() + Environment.NewLine);
                         Console.WriteLine("FirstMsg teacher: " + firstMsg.r_teacher);
-                        
+                        err.Append("FirstMsg teacher: " + firstMsg.r_teacher);
                         Console.WriteLine("EX Message: " + ex.Message.ToString());
+
                         Console.WriteLine(ex.Message);                        
                         // result3 = wilma.Post("messages/compose", firstMsg);
                     }
@@ -392,7 +396,7 @@ namespace PQ_TiedonLaatuService
             }
 
 
-
+            return err;
         }
 
         private static AlertReceiver GetReceiver(Vastuukouluttaja vastuukouluttaja)
