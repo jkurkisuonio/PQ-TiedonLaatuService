@@ -17,6 +17,7 @@ using PQ_TiedonLaatuService.Models.Database;
 using PQ_TiedonLaatuService.Service;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Runtime.CompilerServices;
 
 namespace PQ_TiedonLaatuService
 {
@@ -26,8 +27,12 @@ namespace PQ_TiedonLaatuService
         /// https://stackoverflow.com/questions/206323/how-to-execute-command-line-in-c-get-std-out-results
         /// </summary>
         /// <param name="args"></param>
-        static void Main(string[] args)
+
+         static void Main(string[] args)
         {
+
+    
+            
             string logResp = String.Empty;
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
@@ -231,7 +236,8 @@ namespace PQ_TiedonLaatuService
                         {
                             foreach (string vastuukouluttaja in vastuukouluttajat)
                             {
-                                WilmaMsg wilmaViesti3 = !debug?  new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = vastuukouluttaja } :
+                            // DEBUG: Jani = 27, Tanja = 106    
+                            WilmaMsg wilmaViesti3 = !debug?  new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = vastuukouluttaja } :
                                                                  new WilmaMsg { FormKey = FormKey, bodytext = parsedMsgText, headertext = parsedHeaderText, footertext = parsedFooterText, Subject = alertType.AlertMsgSubject, r_personnel = "106", r_teacher = "339" }; ;
                                 wilmaViestit.Add(wilmaViesti3);
 
@@ -352,7 +358,7 @@ namespace PQ_TiedonLaatuService
                     }
                     catch (Exception ex)
                     {
-                        err.Append(Environment.NewLine + ex.Message.ToString() + Environment.NewLine);
+                        err.Append(Environment.NewLine + " Exception at Program.cs, line 353" + Environment.NewLine + ex.Message.ToString() + Environment.NewLine);
                     }
                     }
                     else
@@ -382,7 +388,7 @@ namespace PQ_TiedonLaatuService
                     catch (Exception ex)
                     {
                         // TODO: Log Errors to central destination
-                        err.Append(Environment.NewLine + ex.Message.ToString() + Environment.NewLine);
+                        err.Append(Environment.NewLine + " Exception at Program.cs, line 382." + Environment.NewLine + ex.Message.ToString() + Environment.NewLine);
                         Console.WriteLine("FirstMsg teacher: " + firstMsg.r_teacher);
                         err.Append("FirstMsg teacher: " + firstMsg.r_teacher);
                         Console.WriteLine("EX Message: " + ex.Message.ToString());

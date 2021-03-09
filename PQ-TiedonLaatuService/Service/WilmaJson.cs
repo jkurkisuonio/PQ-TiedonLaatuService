@@ -93,25 +93,26 @@ namespace PQ_TiedonLaatuService.Service
             //var bytes = Encoding.UTF8.GetBytes(jsonRequestString);
             var bytes = Encoding.UTF8.GetBytes(loginParameters);
 
-
             // Send the json data to the Rest service
-            var postStream = request.GetRequestStream();
-            postStream.Write(bytes, 0, bytes.Length);
-            postStream.Close();
-
-
-
-            // Get the login status from the service
-            var response = (HttpWebResponse)request.GetResponse();
-            var reader = new StreamReader(response.GetResponseStream());
-            string jsonResponseString = reader.ReadToEnd();
-           // values = JsonConvert.DeserializeObject<IndexJson>(jsonResponseString);
-            reader.Close();
-            response.Close();
-
+            string jsonResponseString = String.Empty;
+            try { 
+                    Stream postStream = request.GetRequestStream();
+                    postStream.Write(bytes, 0, bytes.Length);
+                    postStream.Close();
+                    // Get the login status from the service
+                    var response = (HttpWebResponse)request.GetResponse();
+                    var reader = new StreamReader(response.GetResponseStream());
+                    jsonResponseString = reader.ReadToEnd();
+                    // values = JsonConvert.DeserializeObject<IndexJson>(jsonResponseString);
+                    reader.Close();
+                    response.Close();
+                }
+            catch (Exception ex)
+            {
+                jsonRequestString = ex.Message.ToString();
+            }
             // DO the HASH
             ComputeHash(values);
-
             return jsonResponseString;
         }
 
@@ -132,7 +133,6 @@ namespace PQ_TiedonLaatuService.Service
             request.ContentType = "application/json";
             request.Accept = "application/json";
 
-
             // Send the json data to the Rest service
             var postStream = request.GetRequestStream();
             postStream.Write(bytes, 0, bytes.Length);
@@ -148,11 +148,10 @@ namespace PQ_TiedonLaatuService.Service
                 reader.Close();
                 response.Close();
                 return jsonResponseString;
-            }
-            catch (Exception ex)
-            {
-                return String.Empty;
-            }
+                }
+            catch (Exception ex) {
+                return ex.Message.ToString();
+                }
 
         }
 
