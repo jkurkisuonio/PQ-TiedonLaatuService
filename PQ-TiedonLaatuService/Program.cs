@@ -397,8 +397,10 @@ namespace PQ_TiedonLaatuService
                         // result3 = wilma.Post("messages/compose", firstMsg);
                     }
                 }
-                
-                
+
+                // Keep pause for 10 secs after each message.
+                System.Threading.Thread.Sleep(10000);
+
             }
 
 
