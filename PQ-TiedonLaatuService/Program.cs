@@ -28,7 +28,10 @@ namespace PQ_TiedonLaatuService
         /// </summary>
         /// <param name="args"></param>
 
-         static void Main(string[] args)
+        // Instantiate random number generator.  
+        private static readonly Random _random = new Random();
+
+        static void Main(string[] args)
         {
 
     
@@ -398,14 +401,28 @@ namespace PQ_TiedonLaatuService
                     }
                 }
 
-                // Keep pause for 10 secs after each message.
-                System.Threading.Thread.Sleep(10000);
-
+                // Keep random pause between 1 and 5 secs after each message.
+                int num = RandomNumber(1, 5);
+                System.Threading.Thread.Sleep(num * 1000);
             }
-
-
             return err;
         }
+
+        
+
+        // Generates a random number within a range.      
+        /// <summary>
+        /// https://www.c-sharpcorner.com/article/generating-random-number-and-string-in-C-Sharp/
+        /// </summary>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        private static int RandomNumber(int min, int max)
+        {
+            
+            return _random.Next(min, max);
+        }
+
 
         private static AlertReceiver GetReceiver(Vastuukouluttaja vastuukouluttaja)
         {
